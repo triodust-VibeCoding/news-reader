@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarity — News Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400;1,6..72,500&family=Playfair+Display:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --fs-art: 24px;
+  --bg: #f5f0e8;
+  --bg-card: #fdf9f4;
+  --bg-header: #faf5ec;
+  --bg-panel: #f8f2e6;
+  --g1: rgba(92,60,30,.07);
+  --g2: rgba(92,60,30,.04);
+  --g3: rgba(92,60,30,.02);
+  --gb: rgba(92,60,30,.14);
+  --gbs: rgba(92,60,30,.28);
+  --blur: none;
+  --t1: #1a0e06;
+  --t2: #5c4030;
+  --t3: #9c7c62;
+  --t4: #d4bfaa;
+  --blue: #8b1a1a;
+  --blue-g: rgba(139,26,26,.12);
+  --mint: #5c7a4a;
+  --lav: #6c4c8a;
+  --rose: #9c3a3a;
+  --amber: #b5761c;
+  --teal: #3a6c6c;
+  --c-ai: #5c7a4a;
+  --c-world: #8b4513;
+  --c-ent: #8b1a1a;
+  --c-music: #6c4c8a;
+  --c-film: #7c3c6c;
+  --c-games: #3a6c3a;
+  --c-travel: #3a6c6c;
+  --c-life: #b5761c;
+  --c-sci: #2c4a8c;
+  --c-inv: #4a3a7c;
+  --c-tech: #7a5c10;
+  --c-art: #8c4a6a;
+  --r: 3px; --rsm: 2px; --rlg: 4px;
+  --panel-w: 360px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  background: var(--bg);
+  background-attachment: fixed;
+  color: var(--t1); font-family: 'Newsreader', Georgia, serif;
+  font-size: 17px; line-height: 1.65; overflow-x: hidden;
+  perspective: 1200px;
+}
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
+  background-size: 200px; opacity:.7;
+  animation: grain 8s steps(10) infinite;
+}
+@keyframes grain { 0%,100%{transform:translate(0,0)} 10%{transform:translate(-1%,-1%)} 30%{transform:translate(1%,0)} 50%{transform:translate(-1%,1%)} 70%{transform:translate(1%,-1%)} 90%{transform:translate(0,1%)} }
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--gb); border-radius:2px; }
+
+/* ── APP ── */
+#app { position:relative; z-index:1; min-height:100vh; }
+
+/* ── HEADER ── */
+#hdr {
+  position: sticky; top:0; z-index:80;
+  display: flex; align-items: center; gap:14px;
+  padding: 12px 28px;
+  background: var(--bg-header);
+  border-bottom: 2px solid var(--t1);
+  box-shadow: 0 1px 0 var(--gb);
+}
+.logo {
+  font-family:'Playfair Display', 'Newsreader', serif; font-size:40px;
+  font-weight:700; letter-spacing:.01em; color:var(--t1);
+  position:relative;
+}
+.logo em { color:var(--blue); font-style:italic; }
+.logo::after {
+  content:'Est. 2026'; font-family:'Geist Mono',monospace;
+  font-size:7px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--t4); position:absolute; bottom:-2px; left:0;
+  font-weight:400;
+}
+.hsp { flex:1; }
+#clock { font-family:'Geist Mono',monospace; font-size:11px; color:var(--t3); letter-spacing:.04em; }
+.pill {
+  display:flex; align-items:center; gap:6px; padding:5px 12px;
+  background:transparent; border:1px solid var(--gb); border-radius:2px;
+  font-family:'Geist Mono',monospace; font-size:12px; font-weight:400; color:var(--t2); cursor:pointer;
+  transition:all .15s; white-space:nowrap; letter-spacing:.02em;
+}
+.pill:hover { background:var(--g1); border-color:var(--gbs); color:var(--t1); }
+.pill.on { background:var(--blue-g); border-color:var(--blue); color:var(--blue); }
+.pill svg { width:12px; height:12px; flex-shrink:0; }
+.pill .cnt {
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--blue); color:#fdf9f4; border-radius:2px;
+  font-size:10px; padding:1px 5px; font-family:'Geist Mono',monospace;
+  min-width:18px;
+}
+
+/* ── MAIN ── */
+#main { padding:24px 28px; max-width:1600px; margin:0 auto; }
+
+/* ── TABS ── */
+.tabs-wrap {
+  display:flex; gap:0; margin-bottom:20px; overflow-x:auto;
+  scrollbar-width:none; padding:0;
+  border-bottom: 1px solid var(--gb);
+}
+.tabs-wrap::-webkit-scrollbar { display:none; }
+.tab {
+  display:flex; align-items:center; gap:6px; padding:8px 16px;
+  background:transparent; border:none; border-bottom: 2px solid transparent;
+  font-family:'Geist Mono',monospace; font-size:11px; font-weight:400;
+  letter-spacing:.06em; text-transform:uppercase;
+  color:var(--t3); cursor:pointer;
+  white-space:nowrap; transition:all .15s; flex-shrink:0;
+  margin-bottom:-1px;
+}
+.tab:hover { color:var(--t2); background:var(--g2); }
+.tab.active {
+  color:var(--t1); border-bottom-color:var(--t1);
+  background:transparent;
+}
+.tab-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+/* ── TOP PROGRESS BAR ── */
+#topbar {
+  position:sticky; top:57px; z-index:79;
+  height:2px; background:transparent; overflow:hidden;
+  pointer-events:none;
+}
+#topbar-pf {
+  height:100%; width:0%;
+  background:var(--blue);
+  transition:width .4s ease, opacity .6s ease 1s;
+  opacity:1;
+}
+#topbar-pf.done { opacity:0; }
+/* 文章計數 */
+#ic { font-family:'Geist Mono',monospace; font-size:11px; color:var(--t3); letter-spacing:.04em; }
+
+/* ── GRID ── */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--bg);
+  border-top: 2px solid var(--t1);
+  border-bottom: 1px solid var(--gb);
+}
+@media(max-width:1100px){ .news-grid{ grid-template-columns: repeat(2,1fr); } }
+@media(max-width:640px){  .news-grid{ grid-template-columns: 1fr; } }
+
+/* ── CARD ── */
+.card {
+  background:var(--bg-card);
+  border:none; overflow:hidden;
+  cursor:pointer; transition:background .2s, transform .3s ease, box-shadow .3s ease;
+  animation:cin .5s ease forwards; opacity:0; position:relative;
+  text-decoration:none; display:flex; flex-direction:column;
+  transform-style:preserve-3d; will-change:transform;
+}
+@keyframes cin { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── TAB PAGE-TURN ── */
+@keyframes pageOut {
+  0%   { opacity:1; transform:translateX(0); }
+  100% { opacity:0; transform:translateX(-40px); }
+}
+@keyframes pageIn {
+  0%   { opacity:0; transform:translateX(40px); }
+  100% { opacity:1; transform:translateX(0); }
+}
+.grid-page-out { animation:pageOut .18s ease-in forwards; pointer-events:none; }
+.grid-page-in  { animation:pageIn  .28s ease-out both; }
+.card:hover {
+  background:#fffdf8;
+  transform:translateY(-3px) rotateX(1deg);
+  box-shadow:0 8px 24px rgba(26,14,6,.1), 0 2px 6px rgba(26,14,6,.06);
+}
+.card-img-wrap { width:100%; height:180px; overflow:hidden; background:var(--g2); flex-shrink:0; }
+.card-img-wrap.ni { display:flex; align-items:flex-end; position:relative; background:var(--bg-card); border-bottom:2px solid var(--cc,var(--gb)); }
+.card-hero .card-img-wrap.ni { display:none; }
+.ct-bg { position:absolute; inset:0; font-family:'Playfair Display',serif; font-size:88px; font-weight:900; font-style:italic; color:var(--cc,var(--t1)); opacity:.06; padding:4px 10px; line-height:1; overflow:hidden; white-space:nowrap; display:flex; align-items:center; pointer-events:none; user-select:none; }
+.ct-fg { padding:14px 16px; z-index:1; font-family:'Playfair Display',serif; font-size:14px; font-weight:700; font-style:italic; color:var(--cc,var(--ink2)); line-height:1.35; max-height:100%; overflow:hidden; opacity:.75; }
+.card-img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .6s cubic-bezier(.25,.46,.45,.94), filter .3s; filter:sepia(10%) contrast(1.02); }
+.card:hover .card-img { transform:scale(1.04); filter:sepia(0%) contrast(1.05); }
+.card-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; gap:8px; }
+/* ── HERO CARD ── */
+.card-hero { grid-column:1/-1; flex-direction:row; height:320px; max-height:320px; overflow:hidden; }
+.card-hero .card-img-wrap { width:48%; height:320px; flex-shrink:0; overflow:hidden; }
+.card-hero .card-img-wrap .card-img { height:100%; object-fit:cover; }
+.card-hero .card-img-wrap.ni { width:48%; height:320px; }
+.card-hero .card-body { padding:32px 36px; justify-content:center; gap:14px; overflow:hidden; }
+.hero-title { font-size:26px !important; line-height:1.25 !important; }
+.card:hover.card-hero { transform:translateY(-2px); }
+.card-source {
+  display:flex; align-items:center; gap:6px;
+  font-family:'Geist Mono',monospace; font-size:9px; font-weight:500;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--cc, var(--t3));
+}
+.fav { width:12px; height:12px; border-radius:2px; }
+.card-title {
+  font-family:'Newsreader',Georgia,serif; font-size:19px; font-weight:500;
+  line-height:1.3; color:var(--t1); letter-spacing:-.01em; flex:1;
+}
+.card-desc {
+  font-family:'Newsreader',Georgia,serif; font-size:14px; color:var(--t2); line-height:1.6;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  font-style:italic;
+}
+.card-meta {
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3);
+  padding-top:10px; border-top:1px solid var(--gb); margin-top:auto;
+  letter-spacing:.03em;
+}
+.card-cta {
+  display:inline-flex; align-items:center; gap:3px;
+  color:var(--cc, var(--blue)); font-family:'Geist Mono',monospace; font-size:10px;
+  transition:all .15s; letter-spacing:.04em; text-decoration:underline;
+  text-underline-offset:3px;
+}
+.card:hover .card-cta { color:var(--t1); }
+
+/* ── SKELETON ── */
+.skel-card { background:var(--bg-card); border:none; overflow:hidden; }
+.sk { background:linear-gradient(90deg,rgba(92,60,30,.03) 0%,rgba(92,60,30,.07) 50%,rgba(92,60,30,.03) 100%); background-size:200% 100%; animation:shim 1.8s ease-in-out infinite; }
+@keyframes shim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.sk-img { width:100%; height:180px; }
+.sk-body { padding:16px 18px; }
+.sk-line { border-radius:1px; margin-bottom:10px; }
+.sk-line.s{width:35%;height:8px} .sk-line.m{width:60%;height:8px}
+.sk-line.f{width:100%;height:8px} .sk-line.T{width:85%;height:14px;margin-bottom:12px}
+
+/* ══════════════════════════════════════════════
+   SLIDE-IN TOOLS PANEL
+══════════════════════════════════════════════ */
+#panel {
+  position: fixed; top:0; right:0; bottom:0;
+  width: var(--panel-w); z-index:200;
+  background: var(--bg-panel);
+  border-left: 2px solid var(--t1);
+  box-shadow: -8px 0 24px rgba(26,14,6,.12);
+  display: flex; flex-direction:column;
+  transform: translateX(100%);
+  transition: transform .32s cubic-bezier(.4,0,.2,1);
+}
+#panel.open { transform: translateX(0); }
+
+/* Panel header */
+#panel-hdr {
+  display:flex; align-items:center; padding:12px 16px;
+  border-bottom:1px solid var(--gb); flex-shrink:0;
+  background:var(--bg-header);
+}
+.ptabs { display:flex; gap:0; flex:1; }
+.ptab {
+  padding:6px 14px; border-radius:0; font-family:'Geist Mono',monospace;
+  font-size:11px; font-weight:400; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--t3); cursor:pointer; border:none; background:none;
+  transition:all .15s; position:relative; border-bottom:2px solid transparent;
+}
+.ptab:hover { color:var(--t2); }
+.ptab.active { color:var(--t1); border-bottom-color:var(--t1); }
+.ptab .bb {
+  position:absolute; top:4px; right:4px;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--blue); display:none;
+}
+.ptab .bb.on { display:block; }
+.pclose {
+  width:26px; height:26px; border-radius:2px; background:transparent;
+  border:1px solid var(--gb); color:var(--t3); cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+  flex-shrink:0;
+}
+.pclose:hover { background:var(--g1); color:var(--t1); border-color:var(--gbs); }
+
+/* Panel body */
+#panel-body { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+
+/* ── DICT PANE ── */
+#pd { display:flex; flex-direction:column; height:100%; }
+.d-search { padding:12px 14px; border-bottom:1px solid var(--gb); display:flex; gap:7px; flex-shrink:0; }
+.d-inp {
+  flex:1; background:var(--bg-card); border:1px solid var(--gb); border-radius:var(--rsm);
+  color:var(--t1); padding:7px 11px; font-family:'Newsreader',serif; font-size:14px; outline:none;
+}
+.d-inp:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-g); }
+.d-go {
+  padding:7px 14px; background:var(--blue-g); border:1px solid var(--blue);
+  border-radius:var(--rsm); color:var(--blue); font-family:'Geist Mono',monospace;
+  font-size:11px; cursor:pointer; transition:all .15s; white-space:nowrap; letter-spacing:.04em;
+}
+.d-go:hover { background:rgba(139,26,26,.2); }
+.d-scroll { flex:1; overflow-y:auto; padding:14px; }
+.empty { color:var(--t3); font-family:'Newsreader',serif; font-size:14px; text-align:center; padding:40px 12px; line-height:2.2; font-style:italic; }
+.loading { color:var(--t3); font-family:'Geist Mono',monospace; font-size:11px; text-align:center; padding:40px; animation:glow 1s ease-in-out infinite; letter-spacing:.05em; }
+.dw { font-family:'Newsreader',serif; font-size:28px; color:var(--t1); margin-bottom:2px; font-weight:500; }
+.dph { font-family:'Geist Mono',monospace; font-size:11px; color:var(--t3); margin-bottom:14px; letter-spacing:.03em; }
+.dpos {
+  display:inline-block; font-family:'Geist Mono',monospace; font-size:9px;
+  letter-spacing:.1em; padding:2px 6px; background:var(--blue-g);
+  border:1px solid rgba(139,26,26,.25); border-radius:1px; color:var(--blue);
+  text-transform:uppercase; margin-bottom:9px;
+}
+.ddef { font-family:'Newsreader',serif; font-size:15px; color:var(--t1); line-height:1.65; margin-bottom:7px; padding-left:12px; border-left:2px solid var(--gb); }
+.dex { font-family:'Newsreader',serif; font-size:14px; color:var(--t3); font-style:italic; padding-left:12px; margin-bottom:8px; line-height:1.65; }
+.dsec { margin-bottom:18px; }
+.dsave {
+  width:100%; padding:8px; background:transparent;
+  border:1px solid var(--gb); border-radius:var(--rsm);
+  color:var(--t2); font-family:'Geist Mono',monospace; font-size:11px;
+  cursor:pointer; margin-top:10px; transition:all .15s; letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.dsave:hover { background:var(--g1); border-color:var(--gbs); color:var(--t1); }
+
+/* ── NOTES PANE ── */
+#pn { display:flex; flex-direction:column; height:100%; }
+.n-input { padding:12px 14px; border-bottom:1px solid var(--gb); flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+.n-input textarea {
+  background:var(--bg-card); border:1px solid var(--gb); border-radius:var(--rsm);
+  color:var(--t1); padding:8px 11px;
+  font-family:'Newsreader',serif; font-size:15px; line-height:1.65;
+  resize:none; outline:none; height:74px;
+}
+.n-input textarea:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-g); }
+.n-input textarea::placeholder { color:var(--t3); font-style:italic; }
+.n-row { display:flex; gap:7px; }
+.n-list { flex:1; overflow-y:auto; padding:10px 12px; }
+.note-card {
+  background:var(--bg-card); border:1px solid var(--gb); border-left:3px solid var(--blue);
+  border-radius:var(--rsm); padding:12px; margin-bottom:10px; position:relative;
+  animation:cin .2s ease;
+}
+.note-q { font-family:'Newsreader',serif; font-size:15px; color:var(--t1); line-height:1.6; margin-bottom:5px; font-style:italic; }
+.note-a { font-family:'Newsreader',serif; font-size:14px; color:var(--teal); line-height:1.5; margin-bottom:5px; }
+.note-ft { font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3); display:flex; justify-content:space-between; align-items:center; }
+.ndel { background:none; border:none; color:var(--t3); cursor:pointer; font-size:12px; padding:2px 5px; border-radius:2px; transition:all .15s; flex-shrink:0; }
+.ndel:hover { color:var(--rose); background:rgba(156,58,58,.1); }
+.note-src { font-family:'Geist Mono',monospace; font-size:9px; color:var(--t3); text-decoration:none; opacity:.7; flex:1; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.note-src:hover { color:var(--blue); opacity:1; }
+
+/* ── VOCAB PANE ── */
+#pv { display:flex; flex-direction:column; height:100%; }
+.v-list { flex:1; overflow-y:auto; padding:10px 12px; }
+.v-card {
+  background:var(--bg-card); border:1px solid var(--gb);
+  border-radius:var(--rsm); padding:12px; margin-bottom:10px; position:relative;
+  animation:cin .2s ease;
+}
+.v-word { font-family:'Newsreader',serif; font-size:21px; color:var(--t1); margin-bottom:3px; cursor:pointer; transition:color .15s; font-weight:500; }
+.v-word:hover { color:var(--blue); }
+.v-def { font-family:'Newsreader',serif; font-size:14px; color:var(--t2); line-height:1.6; font-style:italic; }
+.v-sentence { font-family:'Newsreader',serif; font-size:13px; color:var(--t2); line-height:1.6; font-style:italic; margin-top:6px; padding-top:6px; border-top:1px solid var(--gb); }
+.v-sentence mark { background:rgba(212,168,68,.25); border-bottom:1.5px solid #d4a844; font-style:normal; color:var(--t1); border-radius:1px; padding:0 1px; }
+.v-ft { display:flex; align-items:center; justify-content:space-between; margin-top:7px; }
+.v-date { font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3); letter-spacing:.03em; }
+.v-yg { font-family:'Geist Mono',monospace; font-size:9px; color:var(--t3); text-decoration:none; letter-spacing:.05em; text-transform:uppercase; opacity:.6; transition:all .15s; }
+.v-yg:hover { color:var(--blue); opacity:1; }
+.vdel { position:absolute; right:9px; top:9px; background:none; border:none; color:var(--t3); cursor:pointer; font-size:12px; padding:3px 5px; border-radius:2px; transition:all .15s; }
+.vdel:hover { color:var(--rose); background:rgba(156,58,58,.1); }
+.v-footer { padding:10px 12px; border-top:1px solid var(--gb); display:flex; gap:7px; flex-shrink:0; }
+.v-footer .pill { flex:1; justify-content:center; font-size:11px; padding:5px 8px; }
+
+/* ── HIGHLIGHT TOOLBAR (unified) ── */
+#hlt {
+  position:fixed; z-index:9999; display:none;
+  background:var(--bg-header);
+  border:1px solid var(--gbs); border-radius:3px;
+  padding:5px 6px;
+  box-shadow:0 6px 24px rgba(26,14,6,.18), 0 1px 3px rgba(26,14,6,.1);
+  gap:0; align-items:stretch;
+  animation:hltIn .15s ease;
+}
+@keyframes hltIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+#hlt.show { display:flex; }
+/* Color swatch buttons — no emoji */
+.hb {
+  width:22px; height:22px; border-radius:2px; border:2px solid transparent;
+  cursor:pointer; display:block; transition:all .12s; margin:0 1px;
+  position:relative;
+}
+.hb:hover { transform:scale(1.2); border-color:var(--t1); }
+.hb.cy { background:#d4a844; }
+.hb.cb { background:#5c7fa8; }
+.hb.cr { background:#a85c5c; }
+.hb.cg { background:#6c8c5a; }
+.hsep { width:1px; height:18px; background:var(--gb); margin:0 5px; align-self:center; }
+.ht {
+  background:none; border:none; color:var(--t2);
+  cursor:pointer; font-family:'Geist Mono',monospace;
+  font-size:9px; padding:4px 7px; border-radius:2px;
+  white-space:nowrap; transition:all .12s;
+  letter-spacing:.05em; text-transform:uppercase;
+}
+.ht:hover { background:var(--g1); color:var(--t1); }
+
+/* ── CONTEXT MENU ── */
+#ctx {
+  position:fixed; z-index:9999; display:none;
+  background:var(--bg-header);
+  border:1px solid var(--gbs); border-radius:var(--rsm);
+  box-shadow:0 6px 24px rgba(26,14,6,.18); overflow:hidden; min-width:196px;
+}
+#ctx.show { display:block; }
+.cx-hdr { padding:7px 14px; font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3); border-bottom:1px solid var(--gb); letter-spacing:.04em; }
+.cx-w { color:var(--blue); font-weight:500; }
+.cx-i { padding:9px 14px; font-family:'Newsreader',serif; font-size:15px; color:var(--t2); cursor:pointer; display:flex; align-items:center; gap:9px; transition:all .12s; }
+.cx-i:hover { background:var(--g2); color:var(--t1); }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:28px; left:50%;
+  transform:translateX(-50%) translateY(70px);
+  background:var(--t1);
+  border:none; border-radius:3px; padding:9px 20px;
+  font-family:'Geist Mono',monospace; font-size:12px; color:var(--bg); z-index:9999;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap; pointer-events:none; box-shadow:0 4px 16px rgba(26,14,6,.25);
+  letter-spacing:.04em;
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ── MODAL ── */
+.mover { position:fixed; inset:0; background:rgba(26,14,6,.45); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+.mover.open { opacity:1; pointer-events:all; }
+.modal { background:var(--bg-panel); border:1px solid var(--gbs); border-radius:var(--rlg); max-width:620px; width:92%; max-height:80vh; overflow-y:auto; padding:32px; box-shadow:0 12px 40px rgba(26,14,6,.2); }
+.modal h2 { font-family:'Playfair Display',serif; font-size:20px; font-weight:600; color:var(--t1); margin-bottom:24px; }
+.sl { list-style:none; }
+.si { display:flex; align-items:flex-start; gap:11px; padding:11px 0; border-bottom:1px solid var(--gb); font-size:14px; }
+.si-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.si-name { color:var(--t1); font-family:'Newsreader',serif; font-size:15px; font-weight:500; }
+.si-url { color:var(--t3); font-size:10px; font-family:'Geist Mono',monospace; word-break:break-all; margin-top:2px; }
+.si-cat { font-size:9px; font-family:'Geist Mono',monospace; letter-spacing:.08em; text-transform:uppercase; margin-left:auto; white-space:nowrap; padding-left:10px; }
+
+/* ── OVERLAY DIMMER when panel open ── */
+#dimmer { position:fixed; inset:0; z-index:190; display:none; }
+#panel.open ~ #dimmer { display:block; }
+
+/* ══════════════════════════════════════════════
+   READER PANEL
+══════════════════════════════════════════════ */
+#reader {
+  position:fixed; top:0; right:0; bottom:0;
+  width:62%; min-width:480px; z-index:150;
+  background:var(--bg-card);
+  border-left:2px solid var(--t1);
+  box-shadow:-6px 0 20px rgba(26,14,6,.1);
+  display:flex; flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.22,1,.36,1);
+}
+#reader.open { transform:translateX(0); }
+/* Gradient veil that slides in ahead of the reader */
+#reader::before {
+  content:''; position:absolute; top:0; bottom:0; left:-80px; width:80px;
+  background:linear-gradient(to right, transparent, rgba(245,240,232,.6) 40%, var(--bg-card));
+  opacity:0; transition:opacity .4s ease;
+  pointer-events:none;
+}
+#reader.open::before { opacity:1; }
+/* When reader opens, push main content left and keep it visible */
+body.reader-active { overflow:hidden; }
+body.reader-active #app {
+  width:38%; min-width:320px;
+  height:100vh; overflow-y:auto; overscroll-behavior:contain;
+  transition:width .35s ease;
+}
+body.reader-active #main { max-width:100%; margin:0; padding:16px 14px; }
+body.reader-active .news-grid { grid-template-columns:1fr !important; gap:1px; }
+body.reader-active #hdr { padding:12px 14px; }
+body.reader-active .logo { font-size:18px; }
+body.reader-active .pill span:not(.cnt) { display:none; }
+body.reader-active .pill { padding:5px 8px; }
+body.reader-active .tabs-wrap { flex-wrap:nowrap; }
+body.reader-active .tab { padding:6px 10px; font-size:10px; }
+
+/* Reader header */
+.reader-hdr {
+  display:flex; align-items:center; gap:12px; padding:10px 20px;
+  border-bottom:2px solid var(--t1); flex-shrink:0;
+  background:var(--bg-header);
+}
+.reader-src {
+  font-family:'Geist Mono',monospace; font-size:10px;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--t3);
+}
+.reader-hdr-sp { flex:1; }
+.reader-ext {
+  font-family:'Geist Mono',monospace; font-size:10px;
+  color:var(--t3); text-decoration:underline; text-underline-offset:3px;
+  letter-spacing:.04em; transition:color .15s;
+}
+.reader-ext:hover { color:var(--t1); }
+.reader-close {
+  width:26px; height:26px; border-radius:2px; background:transparent;
+  border:1px solid var(--gb); color:var(--t3); cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.reader-close:hover { background:var(--g1); color:var(--t1); border-color:var(--gbs); }
+/* Font size buttons */
+.r-fs { display:flex; gap:3px; align-items:center; }
+.rfs { background:transparent; border:1px solid var(--gb); border-radius:2px; color:var(--t3); cursor:pointer; font-family:'Geist Mono',monospace; font-size:10px; padding:3px 6px; transition:all .15s; letter-spacing:.03em; }
+.rfs:hover { background:var(--g1); color:var(--t1); }
+.rfs.active { background:var(--t1); color:var(--bg); border-color:var(--t1); }
+/* Reader Tools button */
+.reader-tools { background:transparent; border:1px solid var(--gb); border-radius:2px; color:var(--t3); cursor:pointer; font-family:'Geist Mono',monospace; font-size:10px; padding:4px 10px; transition:all .15s; letter-spacing:.04em; text-transform:uppercase; }
+.reader-tools:hover { background:var(--g1); color:var(--t1); border-color:var(--gbs); }
+.reader-tools.on { background:var(--t1); color:var(--bg); border-color:var(--t1); }
+/* Hide main Tools button when reader is active */
+body.reader-active #panelBtn { display:none; }
+
+/* Reader body */
+.reader-scroll {
+  flex:1; overflow-y:auto; padding:32px 40px 60px;
+  overscroll-behavior:contain;
+}
+.reader-loading {
+  text-align:center; padding:80px 20px;
+  font-family:'Geist Mono',monospace; font-size:12px;
+  color:var(--t3); letter-spacing:.05em;
+  animation:glow 1.2s ease-in-out infinite;
+}
+/* Reader content fade-in */
+#reader.open .reader-article { animation:readerIn .5s ease .1s both; }
+@keyframes readerIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.reader-fail {
+  text-align:center; padding:60px 20px;
+  font-family:'Newsreader',serif; font-size:16px;
+  color:var(--t3); line-height:2;
+}
+.reader-fail a { color:var(--blue); text-decoration:underline; text-underline-offset:3px; }
+
+/* Article content styling */
+.reader-article {}
+.reader-article h1 {
+  font-family:'Playfair Display','Newsreader',serif;
+  font-size:34px; font-weight:700; line-height:1.18;
+  color:var(--t1); margin-bottom:10px; letter-spacing:-.02em;
+}
+.reader-article .reader-meta {
+  font-family:'Geist Mono',monospace; font-size:10px;
+  color:var(--t3); letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:16px; margin-bottom:28px;
+  border-bottom:none; position:relative;
+}
+/* Ink divider */
+.reader-article .reader-meta::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, var(--t1) 0%, var(--t1) 33%, transparent 33%, transparent 36%, var(--t1) 36%, var(--t1) 100%);
+}
+.reader-article .reader-meta::before {
+  content:'✦'; position:absolute; bottom:-6px; left:50%;
+  transform:translateX(-50%); background:var(--bg-card);
+  padding:0 10px; font-size:10px; color:var(--t3);
+}
+.reader-article p {
+  font-family:'Newsreader',Georgia,serif;
+  font-size:var(--fs-art); line-height:1.8; color:var(--t1);
+  margin-bottom:18px; text-align:justify;
+  text-justify:inter-word;
+}
+/* Drop cap on first paragraph */
+.reader-article p:first-of-type::first-letter {
+  font-family:'Playfair Display',serif;
+  float:left; font-size:3.8em; font-weight:700;
+  line-height:.8; margin:4px 8px 0 -2px;
+  color:var(--blue);
+}
+.reader-article img {
+  max-width:100%; height:auto; margin:20px 0;
+  border:1px solid var(--gb);
+}
+.reader-article h2, .reader-article h3 {
+  font-family:'Playfair Display','Newsreader',serif;
+  color:var(--t1); margin:28px 0 12px; line-height:1.3;
+}
+.reader-article h2 { font-size:24px; font-weight:600; }
+.reader-article h3 { font-size:20px; font-weight:500; }
+.reader-article blockquote {
+  border-left:3px solid var(--gb); padding:8px 16px;
+  margin:16px 0; font-style:italic; color:var(--t2);
+}
+.reader-article ul, .reader-article ol {
+  margin:12px 0 18px 20px; color:var(--t1);
+  font-family:'Newsreader',serif; font-size:17px; line-height:1.75;
+}
+.reader-article li { margin-bottom:6px; }
+.reader-article a { color:var(--blue); text-decoration:underline; text-underline-offset:3px; }
+.reader-article figure { margin:20px 0; }
+.reader-article figcaption {
+  font-family:'Geist Mono',monospace; font-size:11px;
+  color:var(--t3); margin-top:6px; text-align:center;
+  letter-spacing:.03em;
+}
+
+@media(max-width:1100px) {
+  #reader { width:100%; min-width:0; }
+  body.reader-active #app { display:none; }
+}
+@media(max-width:640px) {
+  #main { padding:16px 14px; }
+  #hdr { padding:10px 14px; }
+  .news-grid { grid-template-columns:1fr; }
+  :root { --panel-w:100vw; }
+  .reader-scroll { padding:20px 16px 40px; }
+  .reader-article h1 { font-size:24px; }
+  .reader-article p { font-size:max(16px, calc(var(--fs-art) - 4px)); }
+}
+
+/* ── INK ENTRANCE (arriving from landing page) — SVG multi-circle ── */
+#ink-in {
+  position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+  width: 100%; height: 100%; overflow: visible;
+}
+</style>
+</head>
+<body>
+
+<!-- Shared SVG filter for ink turbulence -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="ink-warp-app" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.009" numOctaves="4" seed="14" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="65" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
+<svg id="ink-in"></svg>
+<div id="app">
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo">Clarity<em>.</em></div>
+  <div class="hsp"></div>
+  <span id="clock"></span>
+  <span id="ic" style="display:none"></span>
+  <button class="pill" onclick="openSrc()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+    Sources
+  </button>
+  <button class="pill" id="rfBtn" onclick="forceRefresh()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5M13.5 2.5v3h-3"/></svg>
+    Refresh
+  </button>
+  <button class="pill" id="panelBtn" onclick="togglePanel()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+    Tools
+    <span class="cnt" id="toolsCnt" style="display:none">0</span>
+  </button>
+</div>
+
+<!-- TOP PROGRESS BAR -->
+<div id="topbar"><div id="topbar-pf"></div></div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="tabs-wrap">
+    <button class="tab active" data-cat="all"          onclick="sw('all')">         <span class="tab-dot" style="background:#ffffff33"></span>All</button>
+    <button class="tab" data-cat="ai"                  onclick="sw('ai')">          <span class="tab-dot" style="background:var(--c-ai)"></span>AI</button>
+    <button class="tab" data-cat="world"               onclick="sw('world')">       <span class="tab-dot" style="background:var(--c-world)"></span>World</button>
+    <button class="tab" data-cat="entertainment"       onclick="sw('entertainment')"><span class="tab-dot" style="background:var(--c-ent)"></span>Entertainment</button>
+    <button class="tab" data-cat="music"               onclick="sw('music')">       <span class="tab-dot" style="background:var(--c-music)"></span>Music</button>
+    <button class="tab" data-cat="film"                onclick="sw('film')">        <span class="tab-dot" style="background:var(--c-film)"></span>Film</button>
+    <button class="tab" data-cat="games"               onclick="sw('games')">       <span class="tab-dot" style="background:var(--c-games)"></span>Games</button>
+    <button class="tab" data-cat="travel"              onclick="sw('travel')">      <span class="tab-dot" style="background:var(--c-travel)"></span>Travel</button>
+    <button class="tab" data-cat="lifestyle"           onclick="sw('lifestyle')">   <span class="tab-dot" style="background:var(--c-life)"></span>Lifestyle</button>
+    <button class="tab" data-cat="science"             onclick="sw('science')">     <span class="tab-dot" style="background:var(--c-sci)"></span>Science</button>
+    <button class="tab" data-cat="investment"          onclick="sw('investment')">  <span class="tab-dot" style="background:var(--c-inv)"></span>Investment</button>
+    <button class="tab" data-cat="tech"                onclick="sw('tech')">        <span class="tab-dot" style="background:var(--c-tech)"></span>Tech</button>
+    <button class="tab" data-cat="art"                 onclick="sw('art')">         <span class="tab-dot" style="background:var(--c-art)"></span>Art</button>
+  </div>
+  <div id="grid"></div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ══ SLIDE-IN TOOLS PANEL ══ -->
+<div id="panel">
+  <div id="panel-hdr">
+    <div class="ptabs">
+      <button class="ptab active" data-pt="dict"     onclick="pTab('dict')">Dict</button>
+      <button class="ptab"        data-pt="notes"    onclick="pTab('notes')">Notes<span class="bb" id="nb"></span></button>
+      <button class="ptab"        data-pt="vocab"    onclick="pTab('vocab')">Vocab<span class="bb" id="vb"></span></button>
+      <button class="ptab"        data-pt="hilights" onclick="pTab('hilights')">Marks<span class="bb" id="hb"></span></button>
+    </div>
+    <button class="pclose" onclick="closePanel()">✕</button>
+  </div>
+  <div id="panel-body">
+    <!-- DICT -->
+    <div id="pd">
+      <div class="d-search">
+        <input class="d-inp" id="dinp" placeholder="Look up a word…" onkeydown="if(event.key==='Enter')doLook()">
+        <button class="d-go" onclick="doLook()">Go</button>
+      </div>
+      <div class="d-scroll" id="dbd">
+        <div class="empty">Type any word to look it up.<br><br>Or right-click selected text<br>anywhere on the page.</div>
+      </div>
+    </div>
+    <!-- NOTES -->
+    <div id="pn" style="display:none">
+      <div class="n-input">
+        <textarea id="nq" placeholder="Paste a sentence or quote you want to remember…"></textarea>
+        <div class="n-row">
+          <input class="d-inp" id="na" placeholder="Your note or translation…" onkeydown="if(event.key==='Enter')addNote()" style="flex:1">
+          <button class="d-go" onclick="addNote()">+ Add</button>
+        </div>
+      </div>
+      <div class="n-list" id="nl"></div>
+    </div>
+    <!-- VOCAB -->
+    <div id="pv" style="display:none">
+      <div class="v-list" id="vl"></div>
+      <div class="v-footer">
+        <button class="pill" onclick="expV()">↓ Vocab CSV</button>
+        <button class="pill" onclick="expN()">↓ Notes CSV</button>
+      </div>
+    </div>
+    <!-- HIGHLIGHTS -->
+    <div id="ph" style="display:none;flex-direction:column;height:100%">
+      <div class="v-list" id="ph-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- READER PANEL -->
+<div id="reader">
+  <div class="reader-hdr">
+    <span class="reader-src" id="readerSrc">—</span>
+    <span class="reader-hdr-sp"></span>
+    <div class="r-fs">
+      <button class="rfs" id="rfsS" onclick="setFs('s')">S</button>
+      <button class="rfs" id="rfsM" onclick="setFs('m')">M</button>
+      <button class="rfs active" id="rfsL" onclick="setFs('l')">L</button>
+    </div>
+    <a class="reader-ext" id="readerExt" href="#" target="_blank" rel="noopener">Open original ↗</a>
+    <button class="reader-tools" id="readerToolsBtn" onclick="togglePanel()">Tools</button>
+    <button class="reader-close" onclick="closeReader()">✕</button>
+  </div>
+  <div class="reader-scroll" id="readerBody">
+    <div class="reader-loading">Loading article…</div>
+  </div>
+</div>
+
+<!-- Highlight & action toolbar -->
+<div id="hlt">
+  <button class="hb cy" onclick="selHL('y')" title="Highlight yellow"></button>
+  <button class="hb cb" onclick="selHL('b')" title="Highlight blue"></button>
+  <button class="hb cr" onclick="selHL('r')" title="Highlight red"></button>
+  <button class="hb cg" onclick="selHL('g')" title="Highlight green"></button>
+  <div class="hsep"></div>
+  <button class="ht" onclick="selDict()">Dict</button>
+  <button class="ht" onclick="selVocab()">Word</button>
+  <button class="ht" onclick="selNote()">Note</button>
+</div>
+
+<!-- Context menu -->
+<div id="ctx">
+  <div class="cx-hdr">Selected: <span class="cx-w" id="cxlbl">—</span></div>
+  <div class="cx-i" onclick="cxDict()"><span style="font-family:'Geist Mono';font-size:9px;color:var(--t3);width:32px">DICT</span> Look up word</div>
+  <div class="cx-i" onclick="cxVocab()"><span style="font-family:'Geist Mono';font-size:9px;color:var(--t3);width:32px">SAVE</span> Save to vocabulary</div>
+  <div class="cx-i" onclick="cxNote()"><span style="font-family:'Geist Mono';font-size:9px;color:var(--t3);width:32px">NOTE</span> Add to notes</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Sources modal -->
+<div class="mover" id="srcMo">
+  <div class="modal">
+    <h2>RSS Sources</h2>
+    <ul class="sl" id="srcL"></ul>
+    <button class="pill" style="margin-top:24px" onclick="closeSrc()">Close</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const PROXIES=[
+  u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+];
+const TTL=20*60*1000, FTO=10000, MR=2, RD=700, PFX='clarity_';
+
+const SOURCES=[
+  {name:'MIT Tech Review AI',  url:'https://www.technologyreview.com/feed/',                            cat:'ai',   color:'var(--c-ai)'},
+  {name:'The Verge AI',        url:'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml', cat:'ai',   color:'var(--c-ai)'},
+  {name:'Wired AI',            url:'https://www.wired.com/feed/tag/artificial-intelligence/rss',        cat:'ai',   color:'var(--c-ai)'},
+  {name:'VentureBeat AI',      url:'https://venturebeat.com/category/ai/feed/',                         cat:'ai',   color:'var(--c-ai)'},
+  {name:'AI News',             url:'https://artificialintelligence-news.com/feed/',                     cat:'ai',   color:'var(--c-ai)'},
+  {name:'Ars Technica AI',     url:'https://feeds.arstechnica.com/arstechnica/index/',                   cat:'ai',   color:'var(--c-ai)'},
+  {name:'AP News',             url:'https://feeds.apnews.com/rss/apf-topnews',                          cat:'world',color:'var(--c-world)'},
+  {name:'BBC World',           url:'https://feeds.bbci.co.uk/news/world/rss.xml',                       cat:'world',color:'var(--c-world)'},
+  {name:'Reuters World',       url:'https://feeds.reuters.com/Reuters/worldNews',                       cat:'world',color:'var(--c-world)'},
+  {name:'Al Jazeera',          url:'https://www.aljazeera.com/xml/rss/all.xml',                         cat:'world',color:'var(--c-world)'},
+  {name:'E! Online',           url:'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml', cat:'entertainment',color:'var(--c-ent)'},
+  {name:'Entertainment Weekly',url:'https://ew.com/feed/',                                              cat:'entertainment',color:'var(--c-ent)'},
+  {name:'People',              url:'https://people.com/feed/',                                          cat:'entertainment',color:'var(--c-ent)'},
+  {name:'TMZ',                 url:'https://www.tmz.com/rss.xml',                                       cat:'entertainment',color:'var(--c-ent)'},
+  {name:'Rolling Stone Music', url:'https://www.rollingstone.com/music/feed/',                          cat:'music',color:'var(--c-music)'},
+  {name:'Pitchfork',           url:'https://pitchfork.com/feed/feed-news/rss',                          cat:'music',color:'var(--c-music)'},
+  {name:'NME',                 url:'https://www.nme.com/feed',                                         cat:'music',color:'var(--c-music)'},
+  {name:'Consequence of Sound',url:'https://consequence.net/feed/',                                     cat:'music',color:'var(--c-music)'},
+  {name:'IndieWire',           url:'https://www.indiewire.com/feed/',                                   cat:'film', color:'var(--c-film)'},
+  {name:'Film School Rejects', url:'https://filmschoolrejects.com/feed/',                               cat:'film', color:'var(--c-film)'},
+  {name:'Collider',            url:'https://collider.com/feed/',                                        cat:'film', color:'var(--c-film)'},
+  {name:'Screen Rant',         url:'https://screenrant.com/feed/',                                      cat:'film', color:'var(--c-film)'},
+  {name:'IGN',                 url:'https://feeds.feedburner.com/ign/all',                              cat:'games',color:'var(--c-games)'},
+  {name:'Rock Paper Shotgun',  url:'https://www.rockpapershotgun.com/feed/news',                        cat:'games',color:'var(--c-games)'},
+  {name:'Game Developer',      url:'https://www.gamedeveloper.com/rss.xml',                             cat:'games',color:'var(--c-games)'},
+  {name:'Eurogamer',           url:'https://www.eurogamer.net/?format=rss',                             cat:'games',color:'var(--c-games)'},
+  {name:'CNN Travel',          url:'http://rss.cnn.com/rss/edition_travel.rss',                         cat:'travel',color:'var(--c-travel)'},
+  {name:'Condé Nast Traveler', url:'https://www.cntraveler.com/feed/rss',                               cat:'travel',color:'var(--c-travel)'},
+  {name:'Atlas Obscura',       url:'https://www.atlasobscura.com/feeds/latest',                         cat:'travel',color:'var(--c-travel)'},
+  {name:'Lonely Planet',       url:'https://www.lonelyplanet.com/news/feed/rss/',                       cat:'travel',color:'var(--c-travel)'},
+  {name:'Bon Appétit',         url:'https://www.bonappetit.com/feed/rss',                               cat:'lifestyle',color:'var(--c-life)'},
+  {name:'Eater',               url:'https://www.eater.com/rss/index.xml',                               cat:'lifestyle',color:'var(--c-life)'},
+  {name:'Lifehacker',          url:'https://lifehacker.com/rss',                                        cat:'lifestyle',color:'var(--c-life)'},
+  {name:'The Kitchn',          url:'https://www.thekitchn.com/feed',                                    cat:'lifestyle',color:'var(--c-life)'},
+  {name:'BBC Science',         url:'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',     cat:'science',color:'var(--c-sci)'},
+  {name:'New Scientist',       url:'https://www.newscientist.com/feed/home/',                           cat:'science',color:'var(--c-sci)'},
+  {name:'NASA News',           url:'https://www.nasa.gov/news-release/feed/',                           cat:'science',color:'var(--c-sci)'},
+  {name:'Science Daily',       url:'https://www.sciencedaily.com/rss/all.xml',                          cat:'science',color:'var(--c-sci)'},
+  {name:'Reuters Business',    url:'https://feeds.reuters.com/reuters/businessNews',                    cat:'investment',color:'var(--c-inv)'},
+  {name:'CNBC Top News',       url:'https://www.cnbc.com/id/100003114/device/rss/rss.html',             cat:'investment',color:'var(--c-inv)'},
+  {name:'CoinDesk',            url:'https://www.coindesk.com/arc/outboundfeeds/rss/',                   cat:'investment',color:'var(--c-inv)'},
+  {name:'Yahoo Finance',       url:'https://finance.yahoo.com/rss/',                                    cat:'investment',color:'var(--c-inv)'},
+  {name:'TechCrunch',          url:'https://techcrunch.com/feed/',                                      cat:'tech', color:'var(--c-tech)'},
+  {name:'The Verge',           url:'https://www.theverge.com/rss/index.xml',                            cat:'tech', color:'var(--c-tech)'},
+  {name:'Ars Technica',        url:'https://feeds.arstechnica.com/arstechnica/index/',                   cat:'tech', color:'var(--c-tech)'},
+  {name:'Wired',               url:'https://www.wired.com/feed/rss',                                    cat:'tech', color:'var(--c-tech)'},
+  {name:'The Guardian Art',    url:'https://www.theguardian.com/artanddesign/rss',                      cat:'art',  color:'var(--c-art)'},
+  {name:'Dezeen',              url:'https://www.dezeen.com/feed/',                                      cat:'art',  color:'var(--c-art)'},
+  {name:'Smithsonian Mag',     url:'https://www.smithsonianmag.com/rss/arts-culture/',                  cat:'art',  color:'var(--c-art)'},
+  {name:'Creative Bloq',       url:'https://www.creativebloq.com/feeds/all',                            cat:'art',  color:'var(--c-art)'},
+];
+
+// ══════════════════════════════════════════════
+//  CACHE
+// ══════════════════════════════════════════════
+const ck=u=>PFX+'f_'+btoa(u).slice(0,36);
+function cget(u){try{const r=localStorage.getItem(ck(u));if(!r)return null;const{ts,items}=JSON.parse(r);return{items,age:Date.now()-ts,fresh:Date.now()-ts<TTL};}catch{return null;}}
+function cput(u,items){try{localStorage.setItem(ck(u),JSON.stringify({ts:Date.now(),items}));}catch{const ks=Object.keys(localStorage).filter(k=>k.startsWith(PFX+'f_'));if(ks.length){localStorage.removeItem(ks[0]);try{localStorage.setItem(ck(u),JSON.stringify({ts:Date.now(),items}));}catch{}}}}
+
+// ══════════════════════════════════════════════
+//  RSS PARSE
+// ══════════════════════════════════════════════
+const fav=u=>{try{return`https://www.google.com/s2/favicons?domain=${new URL(u).hostname}&sz=32`;}catch{return'';}};
+const strip=h=>h?(h.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim()):'';
+const ago=d=>{if(!d)return'—';const dt=new Date(d);if(isNaN(dt))return'—';const m=Math.floor((Date.now()-dt)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';};
+
+function xImg(el){
+  for(const a of['url','href'])for(const t of['media\\:content','media\\:thumbnail','content','thumbnail']){const n=el.querySelector(t);if(n){const u=n.getAttribute(a);if(u&&/\.(jpg|jpeg|png|webp)/i.test(u))return u;}}
+  const enc=el.querySelector('enclosure');if(enc&&(enc.getAttribute('type')||'').startsWith('image'))return enc.getAttribute('url');
+  const raw=el.querySelector('description')?.textContent||el.querySelector('encoded')?.textContent||'';
+  return(raw.match(/https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/i)||[])[0]||null;
+}
+function parseRSS(xml,src){
+  const doc=new DOMParser().parseFromString(xml,'text/xml');const items=[];
+  const pe=el=>{const g=t=>el.querySelector(t)?.textContent?.trim()||'';const raw=el.querySelector('encoded')?.textContent||g('description');return{title:g('title'),desc:strip(raw).slice(0,280),link:g('link')||el.querySelector('link')?.getAttribute('href')||'',pub:g('pubDate')||g('date')||g('published')||g('updated')||'',img:xImg(el)};};
+  doc.querySelectorAll('item').forEach(el=>items.push(pe(el)));
+  if(!items.length)doc.querySelectorAll('entry').forEach(el=>items.push(pe(el)));
+  // Max 2 items per source to keep feed diverse
+  return items.slice(0,2).map(i=>({...i,sn:src.name,cat:src.cat,color:src.color,fav:fav(src.url)}));
+}
+
+// ══════════════════════════════════════════════
+//  FETCH
+// ══════════════════════════════════════════════
+async function fp(url,pfn,ms){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),ms);try{const r=await fetch(pfn(url),{signal:ctrl.signal});clearTimeout(tid);if(!r.ok)return null;const j=await r.json();return j.contents??(typeof j==='string'?j:null);}catch{clearTimeout(tid);return null;}}
+async function fetchFeed(src){for(let a=0;a<=MR;a++){if(a>0)await new Promise(r=>setTimeout(r,RD*a));for(const p of PROXIES){const xml=await fp(src.url,p,FTO);if(xml&&xml.trim().startsWith('<'))return parseRSS(xml,src);}}return null;}
+async function fetchOg(url){if(!url)return null;try{const xml=await fp(url,PROXIES[0],5000);if(!xml)return null;const m=xml.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)||xml.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);return m?m[1]:null;}catch{return null;}}
+
+// ══════════════════════════════════════════════
+//  STATE & RENDER
+// ══════════════════════════════════════════════
+let curCat='all', aGrid=null, rKeys=new Set(), lg=0;
+const ikey=i=>(i.title||'').toLowerCase().slice(0,60);
+const fage=ms=>{const m=Math.floor(ms/60000);return m<60?m+'m':Math.floor(m/60)+'h';};
+
+// Interleave items from different sources so feed stays diverse.
+// Strategy: group by source, then round-robin pick 1 item per source per pass.
+// Within each pass items are sorted by date descending.
+function interleave(items){
+  // Deduplicate by title first
+  const seen=new Set(); const deduped=[];
+  for(const i of items){ const k=ikey(i); if(!seen.has(k)){seen.add(k);deduped.push(i);} }
+  // Group by source name
+  const bySource=new Map();
+  for(const i of deduped){
+    const k=i.sn; if(!bySource.has(k))bySource.set(k,[]);
+    bySource.get(k).push(i);
+  }
+  // Sort each source's items by date desc
+  for(const arr of bySource.values()) arr.sort((a,b)=>new Date(b.pub)-new Date(a.pub));
+  // Round-robin: each pass take the top item from each source (sorted by that item's date)
+  const result=[];
+  while(bySource.size>0){
+    // Sort sources by their next-item date desc so freshest source goes first in each pass
+    const pass=[...bySource.entries()].sort((a,b)=>new Date(b[1][0].pub)-new Date(a[1][0].pub));
+    for(const [k,arr] of pass){
+      result.push(arr.shift());
+      if(arr.length===0)bySource.delete(k);
+    }
+  }
+  return result;
+}
+const dedup=items=>interleave(items);
+
+function setSt({dot,msg,prog}={}){
+  if(prog!==undefined){
+    const pf=document.getElementById('topbar-pf');
+    pf.style.width=prog+'%';
+    if(prog>=100){pf.classList.add('done');}
+    else{pf.classList.remove('done');}
+  }
+}
+function mkSkel(n){const g=document.createElement('div');g.className='news-grid';for(let i=0;i<n;i++){const s=document.createElement('div');s.className='skel-card';s.innerHTML='<div class="sk sk-img"></div><div class="sk-body" style="padding:18px"><div class="sk sk-line s"></div><div class="sk sk-line T"></div><div class="sk sk-line f"></div><div class="sk sk-line m"></div></div>';g.appendChild(s);}return g;}
+
+function niHtml(title){
+  const bg=(title||'').split(' ').slice(0,3).join(' ');
+  const fg=(title||'').split(' ').slice(0,6).join(' ');
+  return`<div class="ct-bg" aria-hidden="true">${bg}</div><div class="ct-fg">${fg}</div>`;
+}
+function attachCard(a,item){
+  let hoverTimer=null;
+  a.addEventListener('mouseenter',()=>{hoverTimer=setTimeout(()=>prefetchArticle(item.link),200);});
+  a.addEventListener('mouseleave',()=>clearTimeout(hoverTimer));
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    if(e.metaKey||e.ctrlKey){window.open(item.link,'_blank');return;}
+    openReader(item.link,item.title,item.sn,item.pub,item.img);
+  });
+}
+function mkImgWrap(item,extraClass=''){
+  const iw=document.createElement('div');
+  iw.className='card-img-wrap'+(item.img?'':' ni')+extraClass;
+  if(item.img){
+    const img=document.createElement('img');img.className='card-img';img.loading='lazy';img.alt='';img.src=item.img;
+    img.onerror=()=>{img.style.display='none';if(!img.dataset.t&&item.link){img.dataset.t='1';fetchOg(item.link).then(og=>{if(og){img.src=og;img.style.display='';}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}});}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}};
+    iw.appendChild(img);
+  } else { iw.innerHTML=niHtml(item.title); }
+  return iw;
+}
+function mkCard(item, delay=0){
+  const a=document.createElement('a');
+  a.className='card'; a.href=item.link||'#'; a.rel='noopener noreferrer';
+  a.dataset.key=ikey(item);
+  a.style.cssText=`--cc:${item.color};animation-delay:${delay}s`;
+  attachCard(a,item);
+  const bd=document.createElement('div');bd.className='card-body';
+  bd.innerHTML=`<div class="card-source">${item.fav?`<img class="fav" src="${item.fav}" alt="" width="13" height="13" onerror="this.style.display='none'">`:''}${item.sn}</div><div class="card-title">${item.title||'Untitled'}</div>${item.desc?`<div class="card-desc">${item.desc}…</div>`:''}<div class="card-meta"><span>${ago(item.pub)}</span><span class="card-cta">Read</span></div>`;
+  a.appendChild(mkImgWrap(item));a.appendChild(bd);
+  return a;
+}
+function mkHeroCard(item){
+  const a=document.createElement('a');
+  a.className='card card-hero'; a.href=item.link||'#'; a.rel='noopener noreferrer';
+  a.dataset.key=ikey(item);
+  a.style.cssText=`--cc:${item.color}`;
+  attachCard(a,item);
+  const bd=document.createElement('div');bd.className='card-body';
+  bd.innerHTML=`<div class="card-source">${item.fav?`<img class="fav" src="${item.fav}" alt="" width="13" height="13" onerror="this.style.display='none'">`:''}${item.sn}</div><div class="card-title hero-title">${item.title||'Untitled'}</div>${item.desc?`<div class="card-desc">${item.desc}…</div>`:''}<div class="card-meta"><span>${ago(item.pub)}</span><span class="card-cta">Read</span></div>`;
+  a.appendChild(mkImgWrap(item));a.appendChild(bd);
+  return a;
+}
+function renderFull(items){
+  const c=document.getElementById('grid');
+  const g=document.createElement('div');g.className='news-grid grid-page-in';
+  aGrid=g;rKeys=new Set();
+  // 每次從前 6 篇隨機選一篇當置頂 hero
+  const pool=items.slice(0,Math.min(6,items.length));
+  const heroIdx=pool.length>1?Math.floor(Math.random()*pool.length):0;
+  const hero=items[heroIdx];
+  const rest=items.filter((_,i)=>i!==heroIdx);
+  if(hero){const k=ikey(hero);rKeys.add(k);g.appendChild(mkHeroCard(hero));}
+  rest.forEach((item,i)=>{
+    const k=ikey(item);if(rKeys.has(k))return;rKeys.add(k);
+    g.appendChild(mkCard(item,Math.min(i*.025,.3)));
+  });
+  c.innerHTML='';c.appendChild(g);
+  const icEl=document.getElementById('ic');icEl.textContent=rKeys.size+' articles';icEl.style.display='';
+}
+function patchGrid(items){
+  if(!aGrid)return;
+  items.forEach(item=>{const k=ikey(item);if(rKeys.has(k))return;rKeys.add(k);const nd=new Date(item.pub||0);let ins=false;for(const card of aGrid.querySelectorAll('.card[data-key]')){const ci=items.find(x=>ikey(x)===card.dataset.key);if(ci&&new Date(ci.pub||0)<nd){aGrid.insertBefore(mkCard(item),card);ins=true;break;}}if(!ins)aGrid.appendChild(mkCard(item));});
+  const icEl=document.getElementById('ic');icEl.textContent=rKeys.size+' articles';icEl.style.display='';
+}
+
+// ══════════════════════════════════════════════
+//  LOAD
+// ══════════════════════════════════════════════
+async function loadCat(cat,force=false){
+  curCat=cat;const gen=++lg;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.cat===cat));
+  const sources=cat==='all'?SOURCES:SOURCES.filter(s=>s.cat===cat);
+  const cached=[];let allFresh=true,anyCached=false;
+  for(const src of sources){const h=cget(src.url);if(h){anyCached=true;cached.push(...h.items);if(!h.fresh)allFresh=false;}else allFresh=false;}
+  if(anyCached&&!force){
+    renderFull(dedup(cached));
+    const oldest=sources.reduce((mx,s)=>{const h=cget(s.url);return h?Math.max(mx,h.age):mx;},0);
+    setSt({dot:allFresh?'green':'yellow',msg:allFresh?'Up to date':`Refreshing… (${fage(oldest)} old)`,prog:allFresh?100:20});
+    if(allFresh)return;
+  }else{
+    const c=document.getElementById('grid');c.innerHTML='';c.appendChild(mkSkel(Math.min(sources.length*2,10)));
+    setSt({dot:'dim',msg:'Loading…',prog:0});aGrid=null;rKeys=new Set();
+  }
+  let loaded=0,total=sources.length,streamed=[...(anyCached&&!force?cached:[])];
+  await Promise.allSettled(sources.map(async src=>{
+    const items=await fetchFeed(src);if(gen!==lg)return;
+    loaded++;setSt({prog:Math.round(loaded/total*100),msg:`Loading ${loaded}/${total}`});
+    if(items){cput(src.url,items);streamed=streamed.filter(i=>i.sn!==src.name);streamed.push(...items);if(!aGrid)renderFull(dedup(streamed));else patchGrid(dedup(streamed));}
+  }));
+  if(gen!==lg)return;
+  if(!aGrid){document.getElementById('grid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:80px;color:var(--t3);font-family:'Geist Mono',monospace;font-size:13px;line-height:2.2">No articles loaded.<br>Click Refresh to try again.</div>`;setSt({dot:'dim',msg:'Load failed',prog:0});}
+  else setSt({dot:'green',msg:`Updated ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`,prog:100});
+}
+function forceRefresh(){loadCat(curCat,true);}
+function sw(cat){
+  if(cat===curCat)return;
+  const grid=document.getElementById('grid');
+  const old=grid.firstElementChild;
+  if(old&&old.classList.contains('news-grid')){
+    old.classList.add('grid-page-out');
+    setTimeout(()=>loadCat(cat),200);
+  }else{
+    loadCat(cat);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  PANEL
+// ══════════════════════════════════════════════
+let panelOpen=false,activePt='dict';
+function togglePanel(){panelOpen?closePanel():openPanel();}
+function openPanel(){
+  panelOpen=true;
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('panelBtn').classList.add('on');
+  document.getElementById('readerToolsBtn').classList.add('on');
+}
+function closePanel(){
+  panelOpen=false;
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('panelBtn').classList.remove('on');
+  document.getElementById('readerToolsBtn').classList.remove('on');
+}
+// Close when clicking outside
+document.addEventListener('click',e=>{
+  if(panelOpen&&!e.target.closest('#panel')&&!e.target.closest('#panelBtn')&&!e.target.closest('#readerToolsBtn')&&!e.target.closest('#hlt')&&!e.target.closest('#ctx'))closePanel();
+});
+
+function pTab(tab){
+  activePt=tab;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.toggle('active',t.dataset.pt===tab));
+  document.getElementById('pd').style.display=tab==='dict'?'flex':'none';
+  document.getElementById('pn').style.display=tab==='notes'?'flex':'none';
+  document.getElementById('pv').style.display=tab==='vocab'?'flex':'none';
+  document.getElementById('ph').style.display=tab==='hilights'?'flex':'none';
+  if(tab==='vocab')rndrV();
+  if(tab==='notes')rndrN();
+  if(tab==='hilights')rndrH();
+}
+
+// ══════════════════════════════════════════════
+//  DICTIONARY
+// ══════════════════════════════════════════════
+async function doLook(w){
+  w=(w||document.getElementById('dinp').value).trim().replace(/[^a-zA-Z\-']/g,'').toLowerCase();
+  if(!w)return;
+  document.getElementById('dinp').value=w;
+  document.getElementById('dbd').innerHTML=`<div class="loading">Looking up "${w}"…</div>`;
+  if(!panelOpen)openPanel(); pTab('dict');
+  try{
+    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`);
+    if(!r.ok)throw 0;const e=(await r.json())[0];
+    const ph=e.phonetics?.find(p=>p.text)?.text||'';
+    let h=`<div class="dw">${e.word}</div>${ph?`<div class="dph">${ph}</div>`:''}`;
+    (e.meanings||[]).forEach(m=>{h+=`<div class="dsec"><span class="dpos">${m.partOfSpeech}</span>`;(m.definitions||[]).slice(0,3).forEach(d=>{h+=`<div class="ddef">${d.definition}</div>`;if(d.example)h+=`<div class="dex">"${d.example}"</div>`;});h+=`</div>`;});
+    const fd=(e.meanings?.[0]?.definitions?.[0]?.definition||'').replace(/`/g,"'").slice(0,220);
+    h+=`<button class="dsave" onclick="saveVocab('${e.word.replace(/'/g,"\\'")}',\`${fd}\`)">📌 Save to Vocabulary</button>`;
+    document.getElementById('dbd').innerHTML=h;
+  }catch{document.getElementById('dbd').innerHTML=`<div class="empty">No definition found for<br><strong style="color:var(--t1)">"${w}"</strong></div>`;}
+}
+
+// ══════════════════════════════════════════════
+//  VOCAB
+// ══════════════════════════════════════════════
+let vocab=JSON.parse(localStorage.getItem(PFX+'vocab')||'[]');
+function pV(){localStorage.setItem(PFX+'vocab',JSON.stringify(vocab));bup();}
+async function saveVocab(word,def='',sentence=''){
+  word=word.trim().toLowerCase();if(!word)return;
+  if(vocab.find(v=>v.word===word)){toast('"'+word+'" already saved');return;}
+  vocab.unshift({word,def:'',sentence:sentence.slice(0,400),date:new Date().toLocaleDateString()});
+  pV();rndrV();toast('📌 "'+word+'" saved!');
+  if(!def){try{const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);if(r.ok)def=(await r.json())[0]?.meanings?.[0]?.definitions?.[0]?.definition||'';}catch{}}
+  if(def){const e=vocab.find(v=>v.word===word);if(e&&!e.def){e.def=def.slice(0,300);pV();rndrV();}}
+}
+function rndrV(){
+  const l=document.getElementById('vl');
+  if(!vocab.length){l.innerHTML='<div class="empty">No words saved yet.<br><br>Right-click any word<br>→ Save to Vocabulary.</div>';return;}
+  l.innerHTML=vocab.map((v,i)=>{
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const hlSentence=v.sentence?v.sentence.replace(new RegExp(`\\b(${v.word})\\b`,'gi'),'<mark>$1</mark>'):'';
+    return`<div class="v-card"><button class="vdel" onclick="dVocab(${i})">✕</button><div class="v-word" onclick="doLook('${v.word}')">${v.word}</div>${v.def?`<div class="v-def">${v.def}</div>`:''}${hlSentence?`<div class="v-sentence">${hlSentence}</div>`:''}<div class="v-ft"><span class="v-date">${v.date}</span><a class="v-yg" href="https://youglish.com/pronounce/${encodeURIComponent(v.word)}/english" target="_blank" rel="noopener">YouGlish ↗</a></div></div>`;
+  }).join('');
+}
+function dVocab(i){vocab.splice(i,1);pV();rndrV();}
+function expV(){if(!vocab.length){toast('Nothing to export');return;}dl('Word,Definition,Date\n'+vocab.map(v=>`"${v.word}","${(v.def||'').replace(/"/g,"'")}","${v.date}"`).join('\n'),'vocabulary.csv','text/csv');}
+
+// ══════════════════════════════════════════════
+//  NOTES
+// ══════════════════════════════════════════════
+let notes=JSON.parse(localStorage.getItem(PFX+'notes')||'[]');
+function pN(){localStorage.setItem(PFX+'notes',JSON.stringify(notes));bup();}
+function addNote(){
+  const q=document.getElementById('nq').value.trim();const a=document.getElementById('na').value.trim();
+  if(!q&&!a){toast('Write something first');return;}
+  notes.unshift({q,a,date:new Date().toLocaleDateString(),src:curArtSrc,surl:curArtUrl});
+  pN();rndrN();document.getElementById('nq').value='';document.getElementById('na').value='';toast('📝 Saved!');
+}
+function rndrN(){
+  const l=document.getElementById('nl');
+  if(!notes.length){l.innerHTML='<div class="empty">No notes yet.<br><br>Right-click selected text<br>→ Add to Notes.</div>';return;}
+  l.innerHTML=notes.map((n,i)=>`<div class="note-card">${n.q?`<div class="note-q">"${n.q}"</div>`:''}<div class="note-a">${n.a||''}</div><div class="note-ft"><span>${n.date}</span>${n.src?`<a class="note-src" ${n.surl?`href="${n.surl}" target="_blank" rel="noopener"`:''}>${n.src}</a>`:''}<button class="ndel" onclick="dNote(${i})">✕</button></div></div>`).join('');
+}
+function dNote(i){notes.splice(i,1);pN();rndrN();}
+function expN(){if(!notes.length){toast('No notes');return;}dl('Quote,Note,Date\n'+notes.map(n=>`"${(n.q||'').replace(/"/g,"'")}","${(n.a||'').replace(/"/g,"'")}","${n.date}"`).join('\n'),'notes.csv','text/csv');}
+
+function bup(){
+  const vn=vocab.length,nn=notes.length,hn=hilights.length;
+  document.getElementById('vb').className='bb'+(vn?' on':'');
+  document.getElementById('nb').className='bb'+(nn?' on':'');
+  document.getElementById('hb').className='bb'+(hn?' on':'');
+  const total=vn+nn+hn;
+  const cnt=document.getElementById('toolsCnt');
+  cnt.style.display=total?'':'none';cnt.textContent=total;
+}
+
+// ══════════════════════════════════════════════
+//  SELECTION / HIGHLIGHT TOOLBAR
+// ══════════════════════════════════════════════
+let hlTxt='', hlDone=false;
+document.addEventListener('mouseup',e=>{
+  setTimeout(()=>{
+    if(hlDone){hlDone=false;return;}
+    const sel=window.getSelection();
+    if(!sel||sel.isCollapsed||!sel.toString().trim()){hideHlt();return;}
+    hlTxt=sel.toString().trim();
+    const range=sel.getRangeAt(0);
+    const rect=range.getBoundingClientRect();
+    const tb=document.getElementById('hlt');tb.classList.add('show');
+    tb.style.left=Math.max(4,Math.min(window.innerWidth-(panelOpen?parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w'))+8:8),rect.left+(rect.width/2)-148))+'px';
+    tb.style.top=(rect.top-50+window.scrollY)+'px';
+  },10);
+});
+document.addEventListener('mousedown',e=>{if(e.button===0&&!e.target.closest('#hlt'))hideHlt();});
+function hideHlt(){document.getElementById('hlt').classList.remove('show');}
+function selHL(c){
+  const sel=window.getSelection();if(!sel||sel.isCollapsed)return;
+  const colors={y:'rgba(212,168,68,.3)',b:'rgba(92,127,168,.25)',r:'rgba(168,92,92,.28)',g:'rgba(108,140,90,.25)'};
+  const borders={y:'#d4a844',b:'#5c7fa8',r:'#a85c5c',g:'#6c8c5a'};
+  try{const r=sel.getRangeAt(0);const sp=document.createElement('mark');sp.style.cssText=`background:${colors[c]||colors.y};border-radius:1px;padding:0 1px;border-bottom:1.5px solid ${borders[c]||borders.y}`;r.surroundContents(sp);sel.removeAllRanges();}catch{}
+  saveHL(hlTxt,c);
+  hlDone=true;
+}
+
+// ══════════════════════════════════════════════
+//  HIGHLIGHTS
+// ══════════════════════════════════════════════
+const hlColors={y:'#d4a844',b:'#5c7fa8',r:'#a85c5c',g:'#6c8c5a'};
+const hlBgs={y:'rgba(212,168,68,.3)',b:'rgba(92,127,168,.25)',r:'rgba(168,92,92,.28)',g:'rgba(108,140,90,.25)'};
+const hlLabels={y:'Yellow',b:'Blue',r:'Red',g:'Green'};
+let hilights=JSON.parse(localStorage.getItem(PFX+'hilights')||'[]');
+function saveHL(text,color){
+  if(!text||text.trim().length<2)return;
+  hilights.unshift({text:text.trim().slice(0,500),color,src:curArtSrc||'',url:curArtUrl||'',title:curArtTitle||'',date:new Date().toLocaleDateString()});
+  localStorage.setItem(PFX+'hilights',JSON.stringify(hilights));
+  bup();toast('✏️ Highlighted!');
+}
+function rndrH(){
+  const l=document.getElementById('ph-list');if(!l)return;
+  if(!hilights.length){l.innerHTML='<div class="empty">No highlights yet.<br><br>Select text in an article<br>and choose a colour.</div>';return;}
+  l.innerHTML=hilights.map((h,i)=>{
+    const bg=hlBgs[h.color]||hlBgs.y;const bdr=hlColors[h.color]||hlColors.y;
+    return`<div class="v-card" style="border-left:3px solid ${bdr}">
+      <button class="vdel" onclick="dHL(${i})">✕</button>
+      <div style="background:${bg};border-radius:2px;padding:8px 10px;margin-bottom:8px;font-family:'Newsreader',serif;font-size:15px;color:var(--t1);line-height:1.6;border-bottom:1.5px solid ${bdr}">"${h.text}"</div>
+      <div class="v-ft">
+        <span class="v-date">${h.date}</span>
+        ${h.src?`<a class="v-yg" ${h.url?`href="${h.url}" target="_blank" rel="noopener"`:''}>${h.src}</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function dHL(i){hilights.splice(i,1);localStorage.setItem(PFX+'hilights',JSON.stringify(hilights));bup();rndrH();}
+function selDict(){const w=hlTxt.replace(/[^a-zA-Z\-']/g,'').trim();if(w)doLook(w);hideHlt();}
+function selVocab(){const w=hlTxt.replace(/[^a-zA-Z\-']/g,'').trim();if(w)saveVocab(w,'',hlTxt);hideHlt();}
+function selNote(){
+  if(hlTxt){
+    document.getElementById('nq').value=hlTxt;
+    // Auto-fill source hint in note placeholder
+    const naEl=document.getElementById('na');
+    if(curArtSrc){naEl.placeholder='Your note… (from: '+curArtSrc+')';}
+    else{naEl.placeholder='Your note or translation…';}
+    if(!panelOpen)openPanel();pTab('notes');naEl.focus();
+  }
+  hideHlt();
+}
+
+// ══════════════════════════════════════════════
+//  CONTEXT MENU
+// ══════════════════════════════════════════════
+let cxTxt='';
+document.addEventListener('contextmenu',e=>{
+  const sel=(window.getSelection()?.toString()||'').trim();if(!sel)return;
+  e.preventDefault();cxTxt=sel;
+  document.getElementById('cxlbl').textContent=sel.length>40?sel.slice(0,40)+'…':sel;
+  const m=document.getElementById('ctx');m.classList.add('show');
+  const pw=panelOpen?parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w'))||360:0;
+  m.style.left=Math.min(e.clientX,window.innerWidth-220-pw)+'px';
+  m.style.top=Math.min(e.clientY,window.innerHeight-130)+'px';
+});
+document.addEventListener('click',()=>document.getElementById('ctx').classList.remove('show'));
+function cxDict(){document.getElementById('ctx').classList.remove('show');const w=cxTxt.replace(/[^a-zA-Z\-']/g,'').trim();if(w)doLook(w);}
+function cxVocab(){document.getElementById('ctx').classList.remove('show');const w=cxTxt.replace(/[^a-zA-Z\-']/g,'').trim();if(w)saveVocab(w,'',cxTxt);}
+function cxNote(){document.getElementById('ctx').classList.remove('show');document.getElementById('nq').value=cxTxt;if(!panelOpen)openPanel();pTab('notes');document.getElementById('na').focus();}
+
+// ══════════════════════════════════════════════
+//  FONT SIZE
+// ══════════════════════════════════════════════
+const FS={s:'18px',m:'21px',l:'24px'};
+function setFs(sz){
+  document.documentElement.style.setProperty('--fs-art',FS[sz]);
+  localStorage.setItem(PFX+'fs',sz);
+  ['s','m','l'].forEach(k=>document.getElementById('rfs'+k.toUpperCase()).classList.toggle('active',k===sz));
+}
+(function(){const saved=localStorage.getItem(PFX+'fs')||'l';setFs(saved);})();
+
+// ══════════════════════════════════════════════
+//  MISC
+// ══════════════════════════════════════════════
+let tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200);}
+function dl(c,fn,tp){Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([c],{type:tp})),download:fn}).click();}
+function openSrc(){document.getElementById('srcL').innerHTML=SOURCES.map(s=>`<li class="si"><span class="si-dot" style="background:${s.color}"></span><div><div class="si-name">${s.name}</div><div class="si-url">${s.url}</div></div><span class="si-cat" style="color:${s.color}">${s.cat}</span></li>`).join('');document.getElementById('srcMo').classList.add('open');}
+function closeSrc(){document.getElementById('srcMo').classList.remove('open');}
+document.getElementById('srcMo').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSrc();});
+function tick(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
+tick();setInterval(tick,1000);
+
+// ══════════════════════════════════════════════
+//  READER PANEL — in-page article viewer
+// ══════════════════════════════════════════════
+let readerOpen=false, readerGen=0, curArtSrc='', curArtUrl='', curArtTitle='';
+// Article cache: url → {html, title, ts}
+const articleCache=new Map();
+// Track which proxy was fastest last time
+let fastestProxy=null;
+// Prefetch cache: url → Promise<html|null>
+const prefetchCache=new Map();
+
+function openReader(url, title, source, pub, img){
+  if(!url) return;
+  readerOpen=true; curArtSrc=source||''; curArtUrl=url||''; curArtTitle=title||'';
+  const gen=++readerGen; // generation counter — only latest click renders
+  document.getElementById('reader').classList.add('open');
+  document.body.classList.add('reader-active');
+  document.getElementById('readerSrc').textContent=source||'—';
+  document.getElementById('readerExt').href=url;
+  if(panelOpen) closePanel();
+
+  const body=document.getElementById('readerBody');
+  const dateStr=pub?ago(pub):'';
+
+  // Step 1: Instantly show RSS summary while full article loads
+  body.innerHTML=`<div class="reader-article">
+    <h1>${escH(title||'Loading…')}</h1>
+    <div class="reader-meta">${escH(source||'')}${dateStr?' · '+dateStr:''}</div>
+    ${img?`<img src="${img}" alt="" style="max-width:100%;height:auto;margin-bottom:24px;border:1px solid var(--gb);">`:''}
+    <div class="reader-loading" id="readerSpinner">Loading full article…</div>
+  </div>`;
+  body.scrollTop=0;
+
+  // Step 2: Check cache — if already fetched, render instantly
+  const cached=articleCache.get(url);
+  if(cached){
+    if(gen!==readerGen) return;
+    renderArticle(body, cached.html, title, source, pub, img, cached.extractedTitle);
+    return;
+  }
+
+  // Step 3: Fetch full article
+  fetchArticle(url, title, source, pub, img, gen);
+}
+
+function closeReader(){
+  readerOpen=false; curArtSrc=''; curArtUrl=''; curArtTitle='';
+  readerGen++; // cancel any in-flight fetches
+  document.getElementById('reader').classList.remove('open');
+  document.body.classList.remove('reader-active');
+}
+
+// Escape key closes reader
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&readerOpen) closeReader();
+});
+
+// Render extracted article into the reader body
+function renderArticle(body, contentHtml, title, source, pub, img, extractedTitle){
+  const dateStr=pub?ago(pub):'';
+  body.innerHTML=`<div class="reader-article">
+    <h1>${escH(extractedTitle||title||'Untitled')}</h1>
+    <div class="reader-meta">${escH(source||'')}${dateStr?' · '+dateStr:''}</div>
+    ${img?`<img src="${img}" alt="" style="max-width:100%;height:auto;margin-bottom:24px;border:1px solid var(--gb);">`:''}
+    ${contentHtml}
+  </div>`;
+  body.scrollTop=0;
+}
+
+// Prefetch article on hover (silent, no UI)
+function prefetchArticle(url){
+  if(!url || articleCache.has(url) || prefetchCache.has(url)) return;
+  prefetchCache.set(url, raceFetchHtml(url).then(html=>{
+    if(html){
+      const content=extractContent(html, '');
+      articleCache.set(url, {html:content.html, extractedTitle:content.title, ts:Date.now()});
+    }
+    prefetchCache.delete(url);
+    return html;
+  }));
+}
+
+// Core fetch helper — try a URL, handle JSON or raw text
+function tryFetch(fetchUrl, timeoutMs){
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
+  return fetch(fetchUrl,{signal:ctrl.signal}).then(r=>{
+    clearTimeout(tid);
+    if(!r.ok) return null;
+    return r.text().then(text=>{
+      try{
+        const j=JSON.parse(text);
+        const c=j.contents??(typeof j==='string'?j:null);
+        if(c && c.trim().length>200) return c;
+      }catch{}
+      if(text.trim().length>200 && (text.includes('<') || text.includes('DOCTYPE'))) return text;
+      return null;
+    });
+  }).catch(()=>{ clearTimeout(tid); return null; });
+}
+
+// Race all proxies — returns first valid HTML; remembers fastest proxy
+async function raceFetchHtml(url){
+  // Build candidate list — put fastest proxy first if we know it
+  const proxyList=fastestProxy
+    ? [fastestProxy, ...PROXIES.filter(p=>p!==fastestProxy)]
+    : [...PROXIES];
+
+  // Use Promise.any for true racing — first success wins instantly
+  const candidates=proxyList.map((p,i)=>
+    tryFetch(p(url), 10000).then(html=>{
+      if(!html) throw new Error('empty');
+      fastestProxy=PROXIES[PROXIES.indexOf(p)]??p; // remember winner
+      return html;
+    })
+  );
+  // Also try direct CORS
+  candidates.push(
+    tryFetch(url, 8000).then(html=>{ if(!html) throw new Error('empty'); return html; })
+  );
+
+  try{
+    return await Promise.any(candidates);
+  }catch{ return null; }
+}
+
+async function fetchArticle(url, title, source, pub, img, gen){
+  const body=document.getElementById('readerBody');
+
+  // Check if prefetch already got it
+  const cached=articleCache.get(url);
+  if(cached){
+    if(gen!==readerGen) return; // stale — user clicked another article
+    renderArticle(body, cached.html, title, source, pub, img, cached.extractedTitle);
+    return;
+  }
+
+  // Wait for prefetch if in flight, otherwise start fresh
+  let html=null;
+  const pending=prefetchCache.get(url);
+  if(pending){
+    html=await pending;
+    // Re-check cache since prefetch may have populated it
+    const c2=articleCache.get(url);
+    if(c2){ if(gen===readerGen) renderArticle(body, c2.html, title, source, pub, img, c2.extractedTitle); return; }
+  }
+
+  if(!html) html=await raceFetchHtml(url);
+
+  // Stale check — if user clicked another article while waiting, discard
+  if(gen!==readerGen) return;
+
+  if(!html){
+    const spinner=document.getElementById('readerSpinner');
+    if(spinner) spinner.outerHTML=`<div class="reader-fail">
+      Could not load this article.<br>
+      The site may block external access.<br><br>
+      <a href="${url}" target="_blank" rel="noopener">Open in new tab ↗</a>
+    </div>`;
+    return;
+  }
+  // Parse and extract content
+  const content=extractContent(html, title);
+  // Cache for instant re-open
+  articleCache.set(url, {html:content.html, extractedTitle:content.title, ts:Date.now()});
+  // Final stale check
+  if(gen!==readerGen) return;
+  renderArticle(body, content.html, title, source, pub, img, content.title);
+}
+
+function escH(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function extractContent(rawHtml, knownTitle){
+  const doc=new DOMParser().parseFromString(rawHtml,'text/html');
+  // Remove unwanted elements — cast a wide net
+  const removeSelectors=[
+    'script','style','noscript','iframe','svg','nav','header','footer',
+    'aside','form','video','audio','canvas',
+    '[role="navigation"]','[role="banner"]','[role="complementary"]','[role="dialog"]',
+    '.ad,.ads,.advertisement,.social-share,.share-buttons,.related-articles',
+    '.sidebar,.menu,.nav,.newsletter,.popup,.modal,.cookie,.banner',
+    '.comments,.comment-section,#comments,.disqus',
+    '[data-ad],.promo,.sponsored,.partner-content',
+    '.related,.recommended,.trending,.popular,.more-stories',
+    '.author-bio,.byline-share,.social,.share',
+    '[class*="cookie"],[class*="popup"],[class*="modal"],[class*="overlay"]',
+    '[class*="newsletter"],[class*="subscribe"],[class*="signup"]',
+    '[id*="cookie"],[id*="popup"],[id*="modal"]',
+  ];
+  removeSelectors.forEach(sel=>{
+    try{ doc.querySelectorAll(sel).forEach(el=>el.remove()); }catch{}
+  });
+
+  // Try to find article title from the page
+  let pageTitle=knownTitle||'';
+  if(!pageTitle){
+    const h1=doc.querySelector('h1');
+    if(h1) pageTitle=h1.textContent.trim();
+    else pageTitle=doc.querySelector('title')?.textContent?.trim()||'';
+  }
+
+  // Find main content using common selectors (ordered by specificity)
+  const contentSelectors=[
+    'article [itemprop="articleBody"]',
+    '[itemprop="articleBody"]',
+    'article .article-body','article .story-body',
+    'article .post-content','article .entry-content',
+    'article .article-content','article .article__body',
+    '.article-body','.story-body','.post-content',
+    '.entry-content','.article-content','.story-content',
+    '.content-body','.post-body','.body-text',
+    '.article__body','.story__body','.caas-body',
+    '[data-module="ArticleBody"]','[data-component="text-block"]',
+    '.l-article__body','.article-text','.article__text',
+    '.RichTextArticleBody','[class*="ArticleBody"]','[class*="article-body"]',
+    'main article','article',
+    '[role="article"]','[role="main"]','main',
+    '.content','.post','#content','#article',
+  ];
+
+  let contentEl=null;
+  for(const sel of contentSelectors){
+    try{
+      const el=doc.querySelector(sel);
+      if(el && el.textContent.trim().length>150){
+        contentEl=el; break;
+      }
+    }catch{}
+  }
+
+  // Fallback: find the element with the most <p> text content
+  if(!contentEl){
+    let best=null, bestLen=0;
+    doc.querySelectorAll('div, section, main, article').forEach(el=>{
+      const ps=el.querySelectorAll('p');
+      const len=[...ps].reduce((s,p)=>s+p.textContent.length,0);
+      // Prefer elements with more paragraph text AND fewer nested divs (less likely to be a wrapper)
+      if(len>bestLen){ bestLen=len; best=el; }
+    });
+    if(best && bestLen>80) contentEl=best;
+  }
+
+  // Last resort: collect all <p> tags from body
+  if(!contentEl){
+    const allP=[...doc.querySelectorAll('p')].filter(p=>p.textContent.trim().length>30);
+    if(allP.length>1){
+      const div=doc.createElement('div');
+      allP.forEach(p=>div.appendChild(p.cloneNode(true)));
+      contentEl=div;
+    }
+  }
+
+  if(!contentEl){
+    return { title:pageTitle, html:'<p style="color:var(--t3);font-style:italic">Could not extract article content. Try opening the original page.</p>' };
+  }
+
+  // Clean and rebuild the content - only keep safe elements
+  const allowed=new Set(['P','H1','H2','H3','H4','BLOCKQUOTE','UL','OL','LI','FIGURE','FIGCAPTION','IMG','A','EM','STRONG','B','I','BR','MARK','SUP','SUB','SPAN']);
+
+  function cleanNode(node){
+    if(node.nodeType===3) return node.textContent; // text
+    if(node.nodeType!==1) return '';
+    const tag=node.tagName;
+    if(!allowed.has(tag)) {
+      // For non-allowed container tags, recurse into children to salvage text
+      if(['DIV','SECTION','MAIN','ARTICLE','HEADER','ASIDE','FOOTER','DD','DT','DL','DETAILS','SUMMARY','HGROUP','PICTURE','SOURCE','TIME','ABBR','DATA','ADDRESS'].includes(tag)){
+        let inner='';
+        node.childNodes.forEach(c=>{ inner+=cleanNode(c); });
+        return inner;
+      }
+      return '';
+    }
+    // Build clean element
+    let attrs='';
+    if(tag==='A'){
+      const href=node.getAttribute('href');
+      if(href && href.startsWith('http')) attrs=` href="${escH(href)}" target="_blank" rel="noopener"`;
+      else return node.textContent; // skip non-http links
+    }
+    if(tag==='IMG'){
+      const src=node.getAttribute('src')||node.getAttribute('data-src')||'';
+      const alt=node.getAttribute('alt')||'';
+      if(src && (src.startsWith('http')||src.startsWith('//'))){
+        return `<img src="${escH(src)}" alt="${escH(alt)}">`;
+      }
+      return '';
+    }
+    let inner='';
+    node.childNodes.forEach(c=>{ inner+=cleanNode(c); });
+    if(!inner.trim() && !['BR','IMG'].includes(tag)) return '';
+    return `<${tag.toLowerCase()}${attrs}>${inner}</${tag.toLowerCase()}>`;
+  }
+
+  let html=cleanNode(contentEl);
+
+  // Remove the known title if it appears at the beginning (to avoid duplication)
+  if(pageTitle){
+    const escapedTitle=pageTitle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    html=html.replace(new RegExp(`^\\s*<h1[^>]*>\\s*${escapedTitle}\\s*</h1>`,'i'),'');
+  }
+
+  // If result is too short, it likely failed (paywall, JS-rendered, etc.)
+  if(html.replace(/<[^>]*>/g,'').trim().length<50){
+    return { title:pageTitle, html:'<p style="color:var(--t3);font-style:italic">This article may be behind a paywall or requires JavaScript to render.</p>' };
+  }
+
+  return { title:pageTitle, html };
+}
+
+// INIT
+// ── Ink entrance: multi-circle scatter recede (mirrors landing flood) ──
+(function(){
+  const svg = document.getElementById('ink-in');
+  if (!svg) return;
+  if (!sessionStorage.getItem('clarity_from_landing')) { svg.remove(); return; }
+  sessionStorage.removeItem('clarity_from_landing');
+
+  const NS2 = 'http://www.w3.org/2000/svg';
+  function r2(a,b){ return a + Math.random()*(b-a); }
+
+  // Same zone pattern as landing veil so composition feels like continuation
+  const drops = [
+    { cx: r2(43,57), cy: r2(43,57), r: r2(78,94), delay: r2(160,260) },
+    { cx: r2(3,18),  cy: r2(3,22),  r: r2(50,68), delay: r2(0,60)    },
+    { cx: r2(76,93), cy: r2(3,20),  r: r2(46,62), delay: r2(20,80)   },
+    { cx: r2(3,17),  cy: r2(72,88), r: r2(50,65), delay: r2(40,100)  },
+    { cx: r2(78,95), cy: r2(73,89), r: r2(46,60), delay: r2(10,70)   },
+    { cx: r2(41,59), cy: r2(2,13),  r: r2(30,46), delay: r2(80,140)  },
+    { cx: r2(41,59), cy: r2(87,98), r: r2(32,48), delay: r2(30,90)   },
+    { cx: r2(1,15),  cy: r2(41,59), r: r2(28,42), delay: r2(100,160) },
+    { cx: r2(82,97), cy: r2(41,59), r: r2(28,44), delay: r2(50,110)  },
+    { cx: r2(25,40), cy: r2(15,35), r: r2(14,24), delay: r2(0,80)    },
+    { cx: r2(60,78), cy: r2(55,75), r: r2(12,22), delay: r2(30,100)  },
+    { cx: r2(18,35), cy: r2(60,78), r: r2(10,20), delay: r2(50,130)  },
+  ];
+
+  drops.forEach(({ cx, cy, r: rv, delay }) => {
+    const c = document.createElementNS(NS2, 'circle');
+    c.setAttribute('cx', cx + '%');
+    c.setAttribute('cy', cy + '%');
+    c.setAttribute('fill', '#1a0e06');
+    c.setAttribute('filter', 'url(#ink-warp-app)');
+    c.style.cssText = `r:${rv}%; transition: r 0.9s ${delay}ms cubic-bezier(0.76,0,0.24,1);`;
+    svg.appendChild(c);
+  });
+
+  // Trigger recede
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    svg.querySelectorAll('circle').forEach(c => { c.style.r = '0%'; });
+  }));
+
+  const maxDelay = Math.max(...drops.map(d => d.delay));
+  setTimeout(() => svg.remove(), maxDelay + 950);
+})();
+
+bup();loadCat('all');
+setInterval(()=>{const s=curCat==='all'?SOURCES:SOURCES.filter(x=>x.cat===curCat);if(s.some(x=>{const h=cget(x.url);return!h||!h.fresh;}))loadCat(curCat);},5*60*1000);
+</script>
+</body>
+</html>
