@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400;1,6..72,500&family=Playfair+Display:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --fs-art: 24px;
+  --fs-art: 18px;
   --bg: #f5f0e8;
   --bg-card: #fdf9f4;
   --bg-header: #faf5ec;
@@ -63,6 +63,11 @@ body::before {
 @keyframes grain { 0%,100%{transform:translate(0,0)} 10%{transform:translate(-1%,-1%)} 30%{transform:translate(1%,0)} 50%{transform:translate(-1%,1%)} 70%{transform:translate(1%,-1%)} 90%{transform:translate(0,1%)} }
 ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--gb); border-radius:2px; }
+.pill:focus-visible, .tab:focus-visible, .ptab:focus-visible, .rfs:focus-visible,
+.pclose:focus-visible, .reader-close:focus-visible, .reader-tools:focus-visible,
+.d-go:focus-visible, .dsave:focus-visible, .ndel:focus-visible, .vdel:focus-visible {
+  outline: 2px solid var(--blue); outline-offset: 2px;
+}
 
 /* ── APP ── */
 #app { position:relative; z-index:1; min-height:100vh; }
@@ -73,7 +78,7 @@ body::before {
   display: flex; align-items: center; gap:14px;
   padding: 12px 28px;
   background: var(--bg-header);
-  border-bottom: 2px solid var(--t1);
+  border-bottom: 2px solid var(--t2);
   box-shadow: 0 1px 0 var(--gb);
 }
 .logo {
@@ -154,7 +159,7 @@ body::before {
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--bg);
-  border-top: 2px solid var(--t1);
+  border-top: 2px solid var(--t2);
   border-bottom: 1px solid var(--gb);
 }
 @media(max-width:1100px){ .news-grid{ grid-template-columns: repeat(2,1fr); } }
@@ -192,7 +197,8 @@ body::before {
 .card-hero .card-img-wrap.ni { display:none; }
 .ct-bg { position:absolute; inset:0; font-family:'Playfair Display',serif; font-size:88px; font-weight:900; font-style:italic; color:var(--cc,var(--t1)); opacity:.06; padding:4px 10px; line-height:1; overflow:hidden; white-space:nowrap; display:flex; align-items:center; pointer-events:none; user-select:none; }
 .ct-fg { padding:14px 16px; z-index:1; font-family:'Playfair Display',serif; font-size:14px; font-weight:700; font-style:italic; color:var(--cc,var(--ink2)); line-height:1.35; max-height:100%; overflow:hidden; opacity:.75; }
-.card-img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .6s cubic-bezier(.25,.46,.45,.94), filter .3s; filter:sepia(10%) contrast(1.02); }
+.card-img { width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity .45s ease, transform .6s cubic-bezier(.25,.46,.45,.94), filter .3s; filter:sepia(10%) contrast(1.02); }
+.card-img.loaded { opacity:1; }
 .card:hover .card-img { transform:scale(1.04); filter:sepia(0%) contrast(1.05); }
 .card-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; gap:8px; }
 /* ── HERO CARD ── */
@@ -202,6 +208,7 @@ body::before {
 .card-hero .card-img-wrap.ni { width:48%; height:320px; }
 .card-hero .card-body { padding:32px 36px; justify-content:center; gap:14px; overflow:hidden; }
 .hero-title { font-size:26px !important; line-height:1.25 !important; }
+.card-hero .card-title { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .card:hover.card-hero { transform:translateY(-2px); }
 .card-source {
   display:flex; align-items:center; gap:6px;
@@ -234,9 +241,25 @@ body::before {
 
 /* ── SKELETON ── */
 .skel-card { background:var(--bg-card); border:none; overflow:hidden; }
-.sk { background:linear-gradient(90deg,rgba(92,60,30,.03) 0%,rgba(92,60,30,.07) 50%,rgba(92,60,30,.03) 100%); background-size:200% 100%; animation:shim 1.8s ease-in-out infinite; }
+/* Shimmer sweep — text lines */
+.sk { background:linear-gradient(90deg,rgba(92,60,30,.04) 0%,rgba(92,60,30,.09) 50%,rgba(92,60,30,.04) 100%); background-size:200% 100%; animation:shim 1.8s ease-in-out infinite; }
 @keyframes shim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-.sk-img { width:100%; height:180px; }
+/* Newspaper-texture image placeholder */
+.sk-img {
+  width:100%; height:180px; position:relative; overflow:hidden; flex-shrink:0;
+  background:
+    repeating-linear-gradient(0deg, rgba(92,60,30,.025) 0px, rgba(92,60,30,.025) 1px, transparent 1px, transparent 8px),
+    var(--bg-card);
+}
+.sk-img::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent 0%, rgba(245,240,232,.55) 50%, transparent 100%);
+  background-size:200% 100%; animation:shim 2.4s ease-in-out infinite;
+}
+/* Hero skeleton — full-width row */
+.skel-hero { grid-column:1/-1; display:flex; height:320px; }
+.skel-hero .sk-img { width:48%; height:100%; }
+.skel-hero .sk-body { padding:36px 40px; display:flex; flex-direction:column; justify-content:center; gap:0; flex:1; }
 .sk-body { padding:16px 18px; }
 .sk-line { border-radius:1px; margin-bottom:10px; }
 .sk-line.s{width:35%;height:8px} .sk-line.m{width:60%;height:8px}
@@ -249,13 +272,23 @@ body::before {
   position: fixed; top:0; right:0; bottom:0;
   width: var(--panel-w); z-index:200;
   background: var(--bg-panel);
-  border-left: 2px solid var(--t1);
+  border-left: 1px solid var(--gbs);
   box-shadow: -8px 0 24px rgba(26,14,6,.12);
   display: flex; flex-direction:column;
-  transform: translateX(100%);
-  transition: transform .32s cubic-bezier(.4,0,.2,1);
+  transform: translateX(10px) scale(0.97);
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: right center;
+  /* Exit transition — fast ease-in, crisp departure */
+  transition: transform .16s cubic-bezier(.4,0,1,1), opacity .14s ease;
 }
-#panel.open { transform: translateX(0); }
+#panel.open {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  /* Enter transition — fast arrival, soft landing */
+  transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .22s ease;
+}
 
 /* Panel header */
 #panel-hdr {
@@ -357,7 +390,7 @@ body::before {
 .v-list { flex:1; overflow-y:auto; padding:10px 12px; }
 .v-card {
   background:var(--bg-card); border:1px solid var(--gb);
-  border-radius:var(--rsm); padding:12px; margin-bottom:10px; position:relative;
+  border-radius:var(--rsm); padding:14px; margin-bottom:16px; position:relative;
   animation:cin .2s ease;
 }
 .v-word { font-family:'Newsreader',serif; font-size:21px; color:var(--t1); margin-bottom:3px; cursor:pointer; transition:color .15s; font-weight:500; }
@@ -369,8 +402,50 @@ body::before {
 .v-date { font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3); letter-spacing:.03em; }
 .v-yg { font-family:'Geist Mono',monospace; font-size:9px; color:var(--t3); text-decoration:none; letter-spacing:.05em; text-transform:uppercase; opacity:.6; transition:all .15s; }
 .v-yg:hover { color:var(--blue); opacity:1; }
+.v-actions { display:flex; align-items:center; gap:8px; }
+.v-speak { font-family:'Geist Mono',monospace; font-size:11px; color:var(--t3); background:none; border:1px solid var(--gb); border-radius:2px; cursor:pointer; padding:2px 7px; transition:all .15s; letter-spacing:.03em; }
+.v-speak:hover { color:var(--blue); border-color:var(--blue); background:var(--blue-g); }
+.v-speak.speaking { color:var(--blue); border-color:var(--blue); background:var(--blue-g); animation:glow 1s ease-in-out infinite; }
+.v-yg-btn { font-family:'Geist Mono',monospace; font-size:11px; color:var(--t3); background:none; border:1px solid var(--gb); border-radius:2px; cursor:pointer; padding:2px 7px; transition:all .15s; letter-spacing:.03em; }
+.v-yg-btn:hover { color:var(--blue); border-color:var(--blue); background:var(--blue-g); }
+.v-yg-btn.active { color:var(--blue); border-color:var(--blue); background:var(--blue-g); }
 .vdel { position:absolute; right:9px; top:9px; background:none; border:none; color:var(--t3); cursor:pointer; font-size:12px; padding:3px 5px; border-radius:2px; transition:all .15s; }
 .vdel:hover { color:var(--rose); background:rgba(156,58,58,.1); }
+/* YouGlish in-panel */
+#yg-panel {
+  border-top:1px solid var(--gbs); flex-shrink:0;
+  background:var(--bg-card);
+}
+.yg-panel-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 14px; border-bottom:1px solid var(--gb);
+}
+.yg-panel-hdr span {
+  font-family:'Playfair Display',serif; font-size:15px; font-weight:500;
+  font-style:italic; color:var(--t1);
+}
+.yg-panel-close {
+  width:22px; height:22px; background:none; border:1px solid var(--gb);
+  border-radius:2px; color:var(--t3); cursor:pointer; font-size:11px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.yg-panel-close:hover { background:var(--g1); color:var(--t1); }
+#yg-widget-mount {
+  width:100%;
+  background:var(--bg-card);
+  /* Warm the entire widget: turns white areas cream, gives video a subtle editorial tone */
+  filter: sepia(18%) brightness(0.96) contrast(1.02);
+}
+#yg-widget-mount iframe { display:block; }
+/* Override YouGlish's default blue/bright text to match our warm palette */
+#yg-widget-mount a,
+#yg-widget-mount a:visited { color: var(--blue) !important; }
+#yg-widget-mount p,
+#yg-widget-mount div { color: var(--t2); }
+#yg-widget-mount mark,
+#yg-widget-mount b,
+#yg-widget-mount strong { background: rgba(212,168,68,.28) !important; color: var(--t1) !important; border-radius:1px; padding:0 1px; }
+
 .v-footer { padding:10px 12px; border-top:1px solid var(--gb); display:flex; gap:7px; flex-shrink:0; }
 .v-footer .pill { flex:1; justify-content:center; font-size:11px; padding:5px 8px; }
 
@@ -414,7 +489,7 @@ body::before {
   border:1px solid var(--gbs); border-radius:var(--rsm);
   box-shadow:0 6px 24px rgba(26,14,6,.18); overflow:hidden; min-width:196px;
 }
-#ctx.show { display:block; }
+#ctx.show { display:block; animation:hltIn .14s ease; }
 .cx-hdr { padding:7px 14px; font-family:'Geist Mono',monospace; font-size:10px; color:var(--t3); border-bottom:1px solid var(--gb); letter-spacing:.04em; }
 .cx-w { color:var(--blue); font-weight:500; }
 .cx-i { padding:9px 14px; font-family:'Newsreader',serif; font-size:15px; color:var(--t2); cursor:pointer; display:flex; align-items:center; gap:9px; transition:all .12s; }
@@ -427,7 +502,7 @@ body::before {
   background:var(--t1);
   border:none; border-radius:3px; padding:9px 20px;
   font-family:'Geist Mono',monospace; font-size:12px; color:var(--bg); z-index:9999;
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  transition:transform .3s cubic-bezier(.22,1,.36,1);
   white-space:nowrap; pointer-events:none; box-shadow:0 4px 16px rgba(26,14,6,.25);
   letter-spacing:.04em;
 }
@@ -456,13 +531,20 @@ body::before {
   position:fixed; top:0; right:0; bottom:0;
   width:62%; min-width:480px; z-index:150;
   background:var(--bg-card);
-  border-left:2px solid var(--t1);
+  border-left:1px solid var(--gbs);
   box-shadow:-6px 0 20px rgba(26,14,6,.1);
   display:flex; flex-direction:column;
   transform:translateX(100%);
-  transition:transform .4s cubic-bezier(.22,1,.36,1);
+  opacity:0;
+  /* Exit transition — accelerates away, quick */
+  transition:transform .2s cubic-bezier(.4,0,1,1), opacity .16s ease;
 }
-#reader.open { transform:translateX(0); }
+#reader.open {
+  transform:translateX(0);
+  opacity:1;
+  /* Enter transition — heavy panel flies in, soft landing */
+  transition:transform .42s cubic-bezier(.16,1,.3,1), opacity .3s ease;
+}
 /* Gradient veil that slides in ahead of the reader */
 #reader::before {
   content:''; position:absolute; top:0; bottom:0; left:-80px; width:80px;
@@ -490,7 +572,7 @@ body.reader-active .tab { padding:6px 10px; font-size:10px; }
 /* Reader header */
 .reader-hdr {
   display:flex; align-items:center; gap:12px; padding:10px 20px;
-  border-bottom:2px solid var(--t1); flex-shrink:0;
+  border-bottom:1px solid var(--gbs); flex-shrink:0;
   background:var(--bg-header);
 }
 .reader-src {
@@ -520,7 +602,7 @@ body.reader-active .tab { padding:6px 10px; font-size:10px; }
 .reader-tools:hover { background:var(--g1); color:var(--t1); border-color:var(--gbs); }
 .reader-tools.on { background:var(--t1); color:var(--bg); border-color:var(--t1); }
 /* Hide main Tools button when reader is active */
-body.reader-active #panelBtn { display:none; }
+/* body.reader-active #panelBtn { display:none; } — 保留 Tools 按鈕，避免閱讀時無法存取 */
 
 /* Reader body */
 .reader-scroll {
@@ -570,7 +652,7 @@ body.reader-active #panelBtn { display:none; }
   font-family:'Newsreader',Georgia,serif;
   font-size:var(--fs-art); line-height:1.8; color:var(--t1);
   margin-bottom:18px; text-align:justify;
-  text-justify:inter-word;
+  text-justify:inter-word; hyphens:auto;
 }
 /* Drop cap on first paragraph */
 .reader-article p:first-of-type::first-letter {
@@ -724,6 +806,14 @@ body.reader-active #panelBtn { display:none; }
     <!-- VOCAB -->
     <div id="pv" style="display:none">
       <div class="v-list" id="vl"></div>
+      <!-- YouGlish in-panel widget -->
+      <div id="yg-panel" style="display:none">
+        <div class="yg-panel-hdr">
+          <span id="yg-panel-word"></span>
+          <button class="yg-panel-close" onclick="closeYG()">✕</button>
+        </div>
+        <div id="yg-widget-mount"></div>
+      </div>
       <div class="v-footer">
         <button class="pill" onclick="expV()">↓ Vocab CSV</button>
         <button class="pill" onclick="expN()">↓ Notes CSV</button>
@@ -932,7 +1022,17 @@ function setSt({dot,msg,prog}={}){
     else{pf.classList.remove('done');}
   }
 }
-function mkSkel(n){const g=document.createElement('div');g.className='news-grid';for(let i=0;i<n;i++){const s=document.createElement('div');s.className='skel-card';s.innerHTML='<div class="sk sk-img"></div><div class="sk-body" style="padding:18px"><div class="sk sk-line s"></div><div class="sk sk-line T"></div><div class="sk sk-line f"></div><div class="sk sk-line m"></div></div>';g.appendChild(s);}return g;}
+function mkSkel(n){
+  const g=document.createElement('div');g.className='news-grid';
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div');
+    const isHero=i===0;
+    s.className='skel-card'+(isHero?' skel-hero':'');
+    s.innerHTML='<div class="sk-img"></div><div class="sk-body"><div class="sk sk-line s"></div><div class="sk sk-line T"></div><div class="sk sk-line f"></div><div class="sk sk-line m"></div></div>';
+    g.appendChild(s);
+  }
+  return g;
+}
 
 function niHtml(title){
   const bg=(title||'').split(' ').slice(0,3).join(' ');
@@ -953,8 +1053,10 @@ function mkImgWrap(item,extraClass=''){
   const iw=document.createElement('div');
   iw.className='card-img-wrap'+(item.img?'':' ni')+extraClass;
   if(item.img){
-    const img=document.createElement('img');img.className='card-img';img.loading='lazy';img.alt='';img.src=item.img;
-    img.onerror=()=>{img.style.display='none';if(!img.dataset.t&&item.link){img.dataset.t='1';fetchOg(item.link).then(og=>{if(og){img.src=og;img.style.display='';}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}});}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}};
+    const img=document.createElement('img');img.className='card-img';img.loading='lazy';img.alt='';
+    img.onload=()=>img.classList.add('loaded');
+    img.onerror=()=>{img.style.display='none';if(!img.dataset.t&&item.link){img.dataset.t='1';fetchOg(item.link).then(og=>{if(og){img.src=og;img.style.display='';img.onload=()=>img.classList.add('loaded');}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}});}else{iw.classList.add('ni');iw.innerHTML=niHtml(item.title);}};
+    img.src=item.img;
     iw.appendChild(img);
   } else { iw.innerHTML=niHtml(item.title); }
   return iw;
@@ -1119,10 +1221,69 @@ function rndrV(){
   l.innerHTML=vocab.map((v,i)=>{
     const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const hlSentence=v.sentence?v.sentence.replace(new RegExp(`\\b(${v.word})\\b`,'gi'),'<mark>$1</mark>'):'';
-    return`<div class="v-card"><button class="vdel" onclick="dVocab(${i})">✕</button><div class="v-word" onclick="doLook('${v.word}')">${v.word}</div>${v.def?`<div class="v-def">${v.def}</div>`:''}${hlSentence?`<div class="v-sentence">${hlSentence}</div>`:''}<div class="v-ft"><span class="v-date">${v.date}</span><a class="v-yg" href="https://youglish.com/pronounce/${encodeURIComponent(v.word)}/english" target="_blank" rel="noopener">YouGlish ↗</a></div></div>`;
+    return`<div class="v-card"><button class="vdel" onclick="dVocab(${i})">✕</button><div class="v-word" onclick="doLook('${v.word}')">${v.word}</div>${v.def?`<div class="v-def">${v.def}</div>`:''}${hlSentence?`<div class="v-sentence">${hlSentence}</div>`:''}<div class="v-ft"><span class="v-date">${v.date}</span><div class="v-actions"><button class="v-speak" onclick="speakWord(this,'${v.word}')">🔊 Listen</button><button class="v-yg-btn" onclick="openYG('${encodeURIComponent(v.word)}')">YouGlish ↗</button></div></div></div>`;
   }).join('');
 }
 function dVocab(i){vocab.splice(i,1);pV();rndrV();}
+function speakWord(btn,word){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(word);
+  u.lang='en-US'; u.rate=0.9;
+  // Prefer a natural English voice if available
+  const voices=speechSynthesis.getVoices();
+  const preferred=voices.find(v=>/en.US/i.test(v.lang)&&/natural|samantha|google us/i.test(v.name))
+    ||voices.find(v=>/en.US/i.test(v.lang))
+    ||voices.find(v=>/en/i.test(v.lang));
+  if(preferred)u.voice=preferred;
+  btn.classList.add('speaking');
+  u.onend=()=>btn.classList.remove('speaking');
+  u.onerror=()=>btn.classList.remove('speaking');
+  speechSynthesis.speak(u);
+}
+// ── YouGlish Widget ──
+let ygWidget=null, ygScriptLoaded=false, ygPendingWord=null;
+function openYG(encodedWord){
+  const word=decodeURIComponent(encodedWord);
+  document.getElementById('yg-panel-word').textContent=word;
+  document.getElementById('yg-panel').style.display='block';
+  // Scroll vocab list up so widget is visible
+  document.getElementById('pv').scrollTop=99999;
+  if(ygWidget){
+    ygWidget.fetch(word,'english');
+    return;
+  }
+  ygPendingWord=word;
+  if(!ygScriptLoaded){
+    ygScriptLoaded=true;
+    const s=document.createElement('script');
+    s.src='https://youglish.com/public/emb/widget.js';
+    document.head.appendChild(s);
+  }
+}
+function onYouglishAPIReady(){
+  const panelW=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w'))||360;
+  ygWidget=new YG.Widget('yg-widget-mount',{
+    width: panelW-2,
+    components: 76, // 4 title + 8 caption + 64 control buttons (prev/next/play)
+    events:{
+      'onFetchDone':e=>{
+        if(e.totalResult===0){
+          document.getElementById('yg-widget-mount').innerHTML='<div class="empty" style="padding:20px">No results for this word.</div>';
+          return;
+        }
+        // Randomly skip 0–4 examples so each open feels fresh
+        const skip=Math.floor(Math.random()*Math.min(5,e.totalResult));
+        for(let i=0;i<skip;i++)ygWidget.next();
+      }
+    }
+  });
+  if(ygPendingWord){ygWidget.fetch(ygPendingWord,'english');ygPendingWord=null;}
+}
+function closeYG(){
+  document.getElementById('yg-panel').style.display='none';
+  if(ygWidget)ygWidget.pause();
+}
 function expV(){if(!vocab.length){toast('Nothing to export');return;}dl('Word,Definition,Date\n'+vocab.map(v=>`"${v.word}","${(v.def||'').replace(/"/g,"'")}","${v.date}"`).join('\n'),'vocabulary.csv','text/csv');}
 
 // ══════════════════════════════════════════════
@@ -1281,8 +1442,11 @@ function openReader(url, title, source, pub, img){
   if(!url) return;
   readerOpen=true; curArtSrc=source||''; curArtUrl=url||''; curArtTitle=title||'';
   const gen=++readerGen; // generation counter — only latest click renders
+  const prevScroll = window.scrollY;   // 記住目前捲動位置
+  window.scrollTo(0, 0);               // 先歸零，讓 header 留在頂部再鎖 overflow:hidden
   document.getElementById('reader').classList.add('open');
   document.body.classList.add('reader-active');
+  document.getElementById('app').scrollTop = prevScroll; // 把位置轉移到 #app 自己的 scroll
   document.getElementById('readerSrc').textContent=source||'—';
   document.getElementById('readerExt').href=url;
   if(panelOpen) closePanel();
