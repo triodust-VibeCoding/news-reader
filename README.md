@@ -1,1 +1,5 @@
-IyBDbGFyaXR5IOKAkyBOZXdzIFJlYWRlcgoKRW5nbGlzaCBuZXdzIFJTUyByZWFkZXIgd2l0aCBkaWN0aW9uYXJ5LCBoaWdobGlnaHRzLCB2b2NhYiBhbmQgbm90ZXMuCgpCdWlsdCB3aXRoIHZpYmUgY29kaW5nLg==
+# Clarity – News Reader
+
+English news RSS reader with dictionary, highlights, vocab and notes.
+
+Built with vibe coding via Claude.
