@@ -959,16 +959,37 @@ const ago=d=>{if(!d)return'—';const dt=new Date(d);if(isNaN(dt))return'—';co
 function xImg(el){
   for(const a of['url','href'])for(const t of['media\\:content','media\\:thumbnail','content','thumbnail']){const n=el.querySelector(t);if(n){const u=n.getAttribute(a);if(u&&/\.(jpg|jpeg|png|webp)/i.test(u))return u;}}
   const enc=el.querySelector('enclosure');if(enc&&(enc.getAttribute('type')||'').startsWith('image'))return enc.getAttribute('url');
-  const raw=el.querySelector('description')?.textContent||el.querySelector('encoded')?.textContent||'';
+  const raw=el.querySelector('description')?.textContent||el.querySelector('content\\:encoded')?.textContent||el.getElementsByTagNameNS('*','encoded')[0]?.textContent||el.querySelector('encoded')?.textContent||'';
   return(raw.match(/https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/i)||[])[0]||null;
 }
 function parseRSS(xml,src){
   const doc=new DOMParser().parseFromString(xml,'text/xml');const items=[];
-  const pe=el=>{const g=t=>el.querySelector(t)?.textContent?.trim()||'';const raw=el.querySelector('encoded')?.textContent||g('description');return{title:g('title'),desc:strip(raw).slice(0,280),link:g('link')||el.querySelector('link')?.getAttribute('href')||'',pub:g('pubDate')||g('date')||g('published')||g('updated')||'',img:xImg(el)};};
+  const pe=el=>{
+    const g=t=>el.querySelector(t)?.textContent?.trim()||'';
+    // Fix namespace: try multiple approaches for <content:encoded>
+    const encoded=el.querySelector('content\\:encoded')?.textContent
+      ||el.getElementsByTagNameNS('*','encoded')[0]?.textContent
+      ||el.querySelector('encoded')?.textContent||'';
+    const desc=g('description');
+    // For Atom feeds, also check <content> element
+    const atomContent=el.querySelector('content')?.textContent||'';
+    // Pick the richest source (longest = most content)
+    const candidates=[encoded, desc, atomContent].filter(Boolean);
+    const richest=candidates.sort((a,b)=>b.length-a.length)[0]||'';
+    // Store full HTML for reader fallback; stripped short version for card
+    return{
+      title:g('title'),
+      desc:strip(richest).slice(0,280),
+      rssBody:richest.length>100?richest:'',
+      link:g('link')||el.querySelector('link')?.getAttribute('href')||'',
+      pub:g('pubDate')||g('date')||g('published')||g('updated')||'',
+      img:xImg(el)
+    };
+  };
   doc.querySelectorAll('item').forEach(el=>items.push(pe(el)));
   if(!items.length)doc.querySelectorAll('entry').forEach(el=>items.push(pe(el)));
   // Max 2 items per source to keep feed diverse
-  return items.slice(0,2).map(i=>({...i,sn:src.name,cat:src.cat,color:src.color,fav:fav(src.url)}));
+  return items.slice(0,4).map(i=>({...i,sn:src.name,cat:src.cat,color:src.color,fav:fav(src.url)}));
 }
 
 // ══════════════════════════════════════════════
@@ -1046,7 +1067,7 @@ function attachCard(a,item){
   a.addEventListener('click',e=>{
     e.preventDefault();
     if(e.metaKey||e.ctrlKey){window.open(item.link,'_blank');return;}
-    openReader(item.link,item.title,item.sn,item.pub,item.img);
+    openReader(item.link,item.title,item.sn,item.pub,item.img,item.rssBody);
   });
 }
 function mkImgWrap(item,extraClass=''){
@@ -1125,11 +1146,44 @@ async function loadCat(cat,force=false){
     setSt({dot:'dim',msg:'Loading…',prog:0});aGrid=null;rKeys=new Set();
   }
   let loaded=0,total=sources.length,streamed=[...(anyCached&&!force?cached:[])];
-  await Promise.allSettled(sources.map(async src=>{
+
+  // Prioritize: when viewing "all", load 2 sources per category first for fast first paint
+  // When viewing a specific category, load those first, then background-load others
+  let prioritySources, bgSources;
+  if(cat==='all'){
+    // Pick first 2 sources from each category for quick coverage
+    const seen={};
+    prioritySources=[];bgSources=[];
+    for(const s of sources){
+      seen[s.cat]=(seen[s.cat]||0)+1;
+      if(seen[s.cat]<=2) prioritySources.push(s);
+      else bgSources.push(s);
+    }
+  }else{
+    prioritySources=sources;
+    bgSources=[];
+  }
+
+  // Phase 1: Load priority sources (current tab / first batch)
+  await Promise.allSettled(prioritySources.map(async src=>{
     const items=await fetchFeed(src);if(gen!==lg)return;
     loaded++;setSt({prog:Math.round(loaded/total*100),msg:`Loading ${loaded}/${total}`});
     if(items){cput(src.url,items);streamed=streamed.filter(i=>i.sn!==src.name);streamed.push(...items);if(!aGrid)renderFull(dedup(streamed));else patchGrid(dedup(streamed));}
   }));
+  if(gen!==lg)return;
+
+  // Phase 2: Background-load remaining sources
+  if(bgSources.length>0){
+    Promise.allSettled(bgSources.map(async src=>{
+      const items=await fetchFeed(src);if(gen!==lg)return;
+      loaded++;setSt({prog:Math.round(loaded/total*100),msg:`Loading ${loaded}/${total}`});
+      if(items){cput(src.url,items);streamed=streamed.filter(i=>i.sn!==src.name);streamed.push(...items);patchGrid(dedup(streamed));}
+    })).then(()=>{
+      if(gen!==lg)return;
+      setSt({dot:'green',msg:`Updated ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`,prog:100});
+    });
+  }
+
   if(gen!==lg)return;
   if(!aGrid){document.getElementById('grid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:80px;color:var(--t3);font-family:'Geist Mono',monospace;font-size:13px;line-height:2.2">No articles loaded.<br>Click Refresh to try again.</div>`;setSt({dot:'dim',msg:'Load failed',prog:0});}
   else setSt({dot:'green',msg:`Updated ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`,prog:100});
@@ -1438,7 +1492,7 @@ let fastestProxy=null;
 // Prefetch cache: url → Promise<html|null>
 const prefetchCache=new Map();
 
-function openReader(url, title, source, pub, img){
+function openReader(url, title, source, pub, img, rssBody){
   if(!url) return;
   readerOpen=true; curArtSrc=source||''; curArtUrl=url||''; curArtTitle=title||'';
   const gen=++readerGen; // generation counter — only latest click renders
@@ -1471,8 +1525,8 @@ function openReader(url, title, source, pub, img){
     return;
   }
 
-  // Step 3: Fetch full article
-  fetchArticle(url, title, source, pub, img, gen);
+  // Step 3: Fetch full article (pass rssBody as fallback)
+  fetchArticle(url, title, source, pub, img, gen, rssBody);
 }
 
 function closeReader(){
@@ -1556,13 +1610,37 @@ async function raceFetchHtml(url){
   }catch{ return null; }
 }
 
-async function fetchArticle(url, title, source, pub, img, gen){
+async function fetchArticle(url, title, source, pub, img, gen, rssBody){
   const body=document.getElementById('readerBody');
+
+  // Helper: clean RSS HTML content for safe rendering
+  function cleanRssBody(raw){
+    const doc=new DOMParser().parseFromString('<div>'+raw+'</div>','text/html');
+    const root=doc.body.firstChild;
+    if(!root) return '';
+    // Reuse the same cleanNode logic via extractContent
+    const result=extractContent('<html><body><article>'+raw+'</article></body></html>', title);
+    return result.html;
+  }
+
+  // Helper: check if extracted content is too thin (likely JS-rendered page)
+  function isTooThin(contentHtml){
+    const textLen=(contentHtml||'').replace(/<[^>]*>/g,'').trim().length;
+    return textLen<200;
+  }
 
   // Check if prefetch already got it
   const cached=articleCache.get(url);
   if(cached){
     if(gen!==readerGen) return; // stale — user clicked another article
+    // If cached result was too thin but we have rssBody, prefer rssBody
+    if(rssBody && isTooThin(cached.html)){
+      const rssHtml=cleanRssBody(rssBody);
+      if(!isTooThin(rssHtml)){
+        renderArticle(body, rssHtml, title, source, pub, img, cached.extractedTitle);
+        return;
+      }
+    }
     renderArticle(body, cached.html, title, source, pub, img, cached.extractedTitle);
     return;
   }
@@ -1583,6 +1661,15 @@ async function fetchArticle(url, title, source, pub, img, gen){
   if(gen!==readerGen) return;
 
   if(!html){
+    // Fetch failed — try RSS content as fallback
+    if(rssBody){
+      const rssHtml=cleanRssBody(rssBody);
+      if(!isTooThin(rssHtml)){
+        articleCache.set(url, {html:rssHtml, extractedTitle:title, ts:Date.now()});
+        if(gen===readerGen) renderArticle(body, rssHtml, title, source, pub, img, title);
+        return;
+      }
+    }
     const spinner=document.getElementById('readerSpinner');
     if(spinner) spinner.outerHTML=`<div class="reader-fail">
       Could not load this article.<br>
@@ -1593,6 +1680,17 @@ async function fetchArticle(url, title, source, pub, img, gen){
   }
   // Parse and extract content
   const content=extractContent(html, title);
+
+  // If extracted content is too thin, fall back to RSS content
+  if(rssBody && isTooThin(content.html)){
+    const rssHtml=cleanRssBody(rssBody);
+    if(!isTooThin(rssHtml)){
+      articleCache.set(url, {html:rssHtml, extractedTitle:content.title, ts:Date.now()});
+      if(gen===readerGen) renderArticle(body, rssHtml, title, source, pub, img, content.title);
+      return;
+    }
+  }
+
   // Cache for instant re-open
   articleCache.set(url, {html:content.html, extractedTitle:content.title, ts:Date.now()});
   // Final stale check
